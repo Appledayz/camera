@@ -74,6 +74,19 @@
 
     .top-note { color: var(--faint); }
 
+    .note-nav { display: flex; gap: 6px; }
+    .note-nav a {
+      padding: 7px 11px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      text-decoration: none;
+    }
+    .note-nav a:hover { color: var(--text); }
+    .note-nav a[aria-current="page"] { border-color: #3b5140; color: var(--green); }
+    .note-nav-number { margin-right: 6px; font-family: "Consolas", monospace; font-size: 10px; opacity: .75; }
+
     .intro {
       display: flex;
       align-items: end;
@@ -422,6 +435,9 @@
       .shell { width: calc(100% - 32px); }
       .topbar { min-height: 64px; }
       .top-note, .draft-tag { display: none; }
+      .note-nav { gap: 2px; }
+      .note-nav a { padding: 6px 7px; font-size: 11px; }
+      .note-nav-number { display: none; }
       .intro { padding: 34px 0 25px; }
       .intro-copy { font-size: 13px; }
       .graph-card, .control-card { padding: 22px 18px; }
@@ -450,7 +466,10 @@
         </svg>
         <span>FOCUS NOTES</span>
       </div>
-      <span class="top-note">A LITTLE STUDY OF LIGHT &amp; LENSES</span>
+      <nav class="note-nav" aria-label="노트 목록">
+        <a href="index.html" aria-current="page"><span class="note-nav-number">01</span>피사계 심도</a>
+        <a href="exposure.html"><span class="note-nav-number">02</span>노출 삼각형</a>
+      </nav>
     </header>
 
     <main>

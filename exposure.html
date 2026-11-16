@@ -1,0 +1,1078 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>세 가지 손잡이 | 노출 삼각형 시각화</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
+      font-synthesis: none;
+      --background: #0c1314;
+      --panel: #151f20;
+      --border: #2b3a38;
+      --text: #edf2eb;
+      --muted: #9bab9f;
+      --faint: #71847b;
+      --green: #b7dfb3;
+      --yellow: #e9c987;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 15% -20%, #263c31 0, transparent 40%),
+        var(--background);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, select { font: inherit; }
+    button, select, input { accent-color: var(--green); }
+    :focus-visible { outline: 2px solid var(--yellow); outline-offset: 4px; }
+
+    .shell {
+      width: min(1440px, calc(100% - 96px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      border-bottom: 1px solid #293734;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .14em;
+    }
+
+    .brand-mark {
+      width: 31px;
+      height: 31px;
+      color: var(--green);
+    }
+
+    .top-note, .eyebrow, .card-index, .control-number {
+      font-family: "Consolas", "SFMono-Regular", monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .top-note { color: var(--faint); }
+
+    .note-nav { display: flex; gap: 6px; }
+    .note-nav a {
+      padding: 7px 11px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      text-decoration: none;
+    }
+    .note-nav a:hover { color: var(--text); }
+    .note-nav a[aria-current="page"] { border-color: #3b5140; color: var(--green); }
+    .note-nav-number { margin-right: 6px; font-family: "Consolas", monospace; font-size: 10px; opacity: .75; }
+
+    .intro {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 30px;
+      padding: 48px 0 34px;
+    }
+
+    .eyebrow { margin: 0 0 13px; color: var(--green); }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 3.2vw, 45px);
+      line-height: 1.2;
+      letter-spacing: -.055em;
+    }
+
+    .intro-copy {
+      margin: 13px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.8;
+      word-break: keep-all;
+    }
+
+    .draft-tag {
+      flex: none;
+      padding: 9px 12px;
+      border: 1px solid #3c4b3d;
+      border-radius: 6px;
+      color: #c8d6c3;
+      font-family: "Consolas", monospace;
+      font-size: 10px;
+      letter-spacing: .1em;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.8fr) minmax(300px, .82fr);
+      align-items: start;
+      gap: 18px;
+    }
+
+    .card {
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: linear-gradient(155deg, #182423, var(--panel) 64%);
+    }
+
+    .graph-card { padding: 27px 28px 25px; }
+    .control-card { padding: 27px 25px 24px; }
+
+    .card-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 16px;
+    }
+
+    .card-index { margin: 0 0 9px; color: #8ca897; }
+
+    h2 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -.04em;
+    }
+
+    .card-description {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+      word-break: keep-all;
+    }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+      padding: 7px 9px;
+      border: 1px solid #3b5140;
+      border-radius: 5px;
+      color: var(--green);
+      font-size: 10px;
+    }
+
+    .live-badge::before {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      content: "";
+    }
+
+    .readouts {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr 1fr;
+      gap: 12px;
+      margin: 27px 0 21px;
+      padding: 20px 0;
+      border-top: 1px solid #34423e;
+      border-bottom: 1px solid #34423e;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .readout + .readout {
+      padding-left: 18px;
+      border-left: 1px solid #34423e;
+    }
+
+    .readout-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .readout-value {
+      display: block;
+      overflow-wrap: anywhere;
+      font-size: clamp(15px, 1.45vw, 20px);
+      font-weight: 700;
+      letter-spacing: -.035em;
+    }
+
+    .readout-primary .readout-value {
+      color: var(--green);
+      font-size: clamp(21px, 2.2vw, 30px);
+      line-height: 1.15;
+    }
+
+    .readout-unit { font-size: .55em; font-weight: 500; }
+
+    .plot-frame {
+      padding: 16px 15px 11px 8px;
+      border: 1px solid #2a3935;
+      border-radius: 9px;
+      background: #101a19;
+    }
+
+    .plot-heading {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 2px 3px 9px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .plot-heading span:last-child { color: var(--faint); }
+
+    #chart {
+      display: block;
+      width: 100%;
+      height: 310px;
+      overflow: hidden;
+      font-family: inherit;
+    }
+
+    .chart-grid { stroke: #30403a; stroke-width: 1; }
+    .chart-grid-major { stroke: #3d5149; stroke-width: 1; }
+    .chart-grid-minor { stroke: #223230; stroke-width: 1; }
+    .chart-zone { fill: #91c897; fill-opacity: .12; }
+    .chart-boundary { stroke: #8dba91; stroke-opacity: .48; stroke-dasharray: 4 5; }
+    .chart-threshold { stroke: var(--yellow); stroke-width: 1.4; stroke-dasharray: 5 5; }
+    .chart-focus { stroke: #bad6bf; stroke-opacity: .7; stroke-dasharray: 3 5; }
+    .chart-curve { fill: none; stroke: #c5e8c1; stroke-width: 2.5; stroke-linejoin: round; }
+    .chart-tick { fill: #9bad9f; font-size: 11px; font-variant-numeric: tabular-nums; }
+    .chart-focus-label { fill: #dcead9; font-size: 10px; font-weight: 600; }
+
+    .axis-caption {
+      margin: -1px 0 2px;
+      color: var(--muted);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 11px 19px;
+      margin-top: 19px;
+      color: #bac9bd;
+      font-size: 11px;
+    }
+
+    .legend-item { display: inline-flex; align-items: center; gap: 7px; }
+    .legend-line { width: 19px; border-top: 2px solid #c5e8c1; }
+    .legend-threshold { width: 19px; border-top: 1px dashed var(--yellow); }
+    .legend-zone { width: 12px; height: 12px; border: 1px solid #769e79; background: #314939; }
+
+    .graph-note {
+      margin: 15px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.8;
+      word-break: keep-all;
+    }
+
+    .graph-note strong { color: #d6e5d7; font-weight: 600; }
+    .range-note { display: block; color: var(--faint); }
+
+    .reset {
+      padding: 4px 0;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11px;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .reset:hover { color: var(--text); }
+
+    .controls { margin-top: 25px; }
+    .control + .control { margin-top: 25px; }
+
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 13px;
+    }
+
+    .control-name { color: #dce6db; font-size: 12px; font-weight: 600; }
+    .control-number { margin-right: 7px; color: #789084; font-size: 9px; }
+    .control-value { color: var(--green); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    input[type="range"] {
+      display: block;
+      width: 100%;
+      height: 18px;
+      margin: 0;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 3px;
+      border-radius: 3px;
+      background: linear-gradient(to right, var(--green) var(--progress, 0%), #405049 var(--progress, 0%));
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      width: 14px;
+      height: 14px;
+      margin-top: -5.5px;
+      appearance: none;
+      border: 3px solid #c4e6bd;
+      border-radius: 50%;
+      background: #263b2c;
+    }
+
+    input[type="range"]::-moz-range-track { height: 3px; border-radius: 3px; background: #405049; }
+    input[type="range"]::-moz-range-progress { height: 3px; border-radius: 3px; background: var(--green); }
+    input[type="range"]::-moz-range-thumb { width: 8px; height: 8px; border: 3px solid #c4e6bd; border-radius: 50%; background: #263b2c; }
+
+    .range-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 4px;
+      color: var(--faint);
+      font-size: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    select {
+      width: 100%;
+      min-height: 41px;
+      padding: 0 11px;
+      border: 1px solid #405049;
+      border-radius: 6px;
+      background: #101a19;
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .control-help { margin: 9px 0 0; color: var(--faint); font-size: 10px; line-height: 1.6; }
+
+    .tip {
+      margin-top: 27px;
+      padding: 15px;
+      border: 1px solid #3b4c3b;
+      border-radius: 7px;
+      background: #202e25;
+    }
+
+    .tip-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .tip-title { margin: 0; color: #c8dfbf; font-size: 11px; font-weight: 700; }
+    .tip-counter { margin-left: 6px; color: var(--faint); font-weight: 500; font-variant-numeric: tabular-nums; }
+    .tip-nav { display: inline-flex; flex: none; border: 1px solid #3b4c3b; border-radius: 5px; overflow: hidden; }
+    .tip-button {
+      width: 26px;
+      height: 22px;
+      padding: 0;
+      border: 0;
+      background: #1a2720;
+      color: #c8dfbf;
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1;
+    }
+    .tip-button + .tip-button { border-left: 1px solid #3b4c3b; }
+    .tip-button:hover { background: #2a3d2f; color: var(--text); }
+    .tip-subtitle { margin: 0 0 4px; color: #dce9d5; font-size: 11px; font-weight: 600; }
+    .tip-body { margin: 0; color: #a7baaa; font-size: 11px; line-height: 1.7; word-break: keep-all; }
+
+    .readout-delta {
+      color: var(--muted);
+      font-size: .62em;
+      font-weight: 500;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 24px 0 36px;
+      color: var(--faint);
+      font-size: 10px;
+      line-height: 1.7;
+    }
+
+    .footer p { margin: 0; }
+    .footer-mark { flex: none; font-family: "Consolas", monospace; letter-spacing: .08em; }
+
+    noscript { display: block; padding: 14px 0; color: var(--yellow); }
+
+    @media (max-width: 920px) {
+      .shell { width: min(760px, calc(100% - 48px)); }
+      .workspace { grid-template-columns: 1fr; }
+      .control-card { padding: 25px 28px; }
+      .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+      .control + .control { margin-top: 0; }
+    }
+
+    @media (max-width: 520px) {
+      .shell { width: calc(100% - 32px); }
+      .topbar { min-height: 64px; }
+      .top-note, .draft-tag { display: none; }
+      .note-nav { gap: 2px; }
+      .note-nav a { padding: 6px 7px; font-size: 11px; }
+      .note-nav-number { display: none; }
+      .intro { padding: 34px 0 25px; }
+      .intro-copy { font-size: 13px; }
+      .graph-card, .control-card { padding: 22px 18px; }
+      .live-badge { font-size: 9px; }
+      .readouts { grid-template-columns: 1fr 1fr; gap: 14px 8px; margin-top: 22px; }
+      .readout + .readout { padding-left: 10px; }
+      .readout:nth-child(odd) { padding-left: 0; border-left: 0; }
+      .readout-label { font-size: 10px; }
+      .readout-value { font-size: 14px; }
+      .readout-primary .readout-value { font-size: 20px; }
+      .plot-frame { padding-right: 8px; padding-left: 2px; }
+      #chart { height: 280px; }
+      .controls { grid-template-columns: 1fr; gap: 25px; }
+      .footer { display: block; }
+      .footer-mark { margin-top: 9px !important; }
+    }
+
+    .preview-frame { padding: 0; overflow: hidden; }
+    #scene { display: block; width: 100%; height: auto; min-height: 220px; max-height: 380px; aspect-ratio: 960 / 300; background: #000; }
+
+    .meter { margin-top: 20px; }
+    .meter-heading {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 9px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+    .meter-heading span:last-child { color: var(--faint); }
+    .meter-scale { position: relative; height: 34px; margin: 0 10px; }
+    .meter-line { position: absolute; top: 12px; right: 0; left: 0; border-top: 1px solid #4a5c54; }
+    .meter-tick { position: absolute; top: 8px; height: 9px; border-left: 1px solid #5d7068; }
+    .meter-tick.is-major { top: 4px; height: 17px; border-color: #9bab9f; }
+    .meter-tick.is-zero { border-color: var(--green); }
+    .meter-label {
+      position: absolute;
+      top: 23px;
+      color: var(--faint);
+      font-size: 10px;
+      font-variant-numeric: tabular-nums;
+      transform: translateX(-50%);
+    }
+    .meter-marker {
+      position: absolute;
+      top: -4px;
+      width: 0;
+      height: 0;
+      border-right: 6px solid transparent;
+      border-left: 6px solid transparent;
+      border-top: 9px solid var(--green);
+      transform: translateX(-50%);
+      transition: left .15s ease;
+    }
+    .meter-marker.is-off { border-top-color: var(--yellow); }
+
+    .effects {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 22px;
+    }
+    .effect {
+      padding: 15px 15px 14px;
+      border: 1px solid #2a3935;
+      border-radius: 9px;
+      background: #101a19;
+    }
+    .effect-head { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 11px; }
+    .effect-source { color: var(--faint); font-size: 10px; }
+    .effect-value {
+      display: block;
+      margin: 8px 0 10px;
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -.03em;
+      font-variant-numeric: tabular-nums;
+    }
+    .effect-bar { height: 3px; border-radius: 3px; background: #2f3f3a; overflow: hidden; }
+    .effect-bar span { display: block; height: 100%; border-radius: 3px; background: var(--green); transition: width .15s ease; }
+    .effect-scale { display: flex; justify-content: space-between; margin-top: 5px; color: var(--faint); font-size: 10px; }
+    .effect-note { min-height: 3.4em; margin: 9px 0 0; color: var(--muted); font-size: 10px; line-height: 1.7; word-break: keep-all; }
+    .effect-note.is-warning { color: var(--yellow); }
+
+    .mode { min-width: 0; margin: 0; padding: 0; border: 0; }
+    .mode legend { padding: 0; margin-bottom: 13px; }
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid #405049;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .segmented label { position: relative; }
+    .segmented input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+    .segmented span {
+      display: block;
+      padding: 10px 4px;
+      background: #101a19;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+    .segmented label + label span { border-left: 1px solid #405049; }
+    .segmented input:checked + span { background: #263b2c; color: var(--green); font-weight: 600; }
+    .segmented input:focus-visible + span { outline: 2px solid var(--yellow); outline-offset: -2px; }
+
+    .auto-badge {
+      display: none;
+      margin-left: 6px;
+      padding: 2px 5px;
+      border: 1px solid #3b5140;
+      border-radius: 4px;
+      color: var(--green);
+      font-family: "Consolas", monospace;
+      font-size: 9px;
+      letter-spacing: .08em;
+      vertical-align: 2px;
+    }
+    .control.is-auto .auto-badge { display: inline-block; }
+    input[type="range"]:disabled { opacity: .5; cursor: not-allowed; }
+
+    @media (max-width: 920px) {
+      .mode { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 640px) {
+      .effects { grid-template-columns: 1fr; }
+      .effect-note { min-height: 0; }
+    }
+
+    @media (max-width: 520px) {
+      .segmented span { padding: 10px 2px; font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <circle cx="16" cy="16" r="13.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M12.1 3.2 19.7 16h9M28.7 12.1 15.9 19.7l-4.5 7.8M19.9 28.7 12.3 15.9H3.2M3.3 19.9 16.1 12.3l4.5-7.8" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        </svg>
+        <span>FOCUS NOTES</span>
+      </div>
+      <nav class="note-nav" aria-label="노트 목록">
+        <a href="index.html"><span class="note-nav-number">01</span>피사계 심도</a>
+        <a href="exposure.html" aria-current="page"><span class="note-nav-number">02</span>노출 삼각형</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">FIELD NOTE 02 / EXPOSURE TRIANGLE</p>
+          <h1 id="page-title">세 가지 손잡이</h1>
+          <p class="intro-copy">조리개, 셔터 속도, ISO는 모두 사진의 밝기를 바꿉니다.<br>같은 밝기를 만드는 여러 조합 중 무엇을 고르느냐에 따라 사진의 성격이 달라집니다.</p>
+        </div>
+        <span class="draft-tag">INTERACTIVE DRAFT &nbsp; / &nbsp; 02</span>
+      </section>
+
+      <div class="workspace">
+        <section class="card graph-card" aria-labelledby="preview-title">
+          <div class="card-heading">
+            <div>
+              <p class="card-index">01 / THE PREVIEW</p>
+              <h2 id="preview-title">밝기와 그 대가</h2>
+              <p class="card-description">설정이 밝기와 함께 흐림, 움직임, 노이즈를 어떻게 바꾸는지 보여줍니다.</p>
+            </div>
+            <span class="live-badge">실시간 계산</span>
+          </div>
+
+          <div class="readouts" aria-label="계산 결과" aria-live="polite">
+            <div class="readout readout-primary">
+              <span class="readout-label">노출</span>
+              <span class="readout-value"><span id="exposure-value">—</span> <span class="readout-unit">EV</span> <span class="readout-delta" id="exposure-state"></span></span>
+            </div>
+            <div class="readout">
+              <span class="readout-label">장면 밝기</span>
+              <span class="readout-value" id="scene-ev">—</span>
+            </div>
+            <div class="readout">
+              <span class="readout-label">설정 노출값</span>
+              <span class="readout-value" id="settings-ev">—</span>
+            </div>
+            <div class="readout">
+              <span class="readout-label">자동 조정</span>
+              <span class="readout-value"><span id="auto-value">—</span> <span class="readout-delta" id="auto-note"></span></span>
+            </div>
+          </div>
+
+          <div class="plot-frame preview-frame">
+            <svg id="scene" viewBox="0 0 960 300" preserveAspectRatio="xMidYMax slice" role="img" aria-labelledby="scene-title scene-description">
+              <title id="scene-title">현재 설정으로 찍은 장면의 근사 미리보기</title>
+              <desc id="scene-description"></desc>
+              <defs>
+                <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                  <stop id="sky-top" offset="0"/>
+                  <stop id="sky-bottom" offset="1"/>
+                </linearGradient>
+                <filter id="exposure" color-interpolation-filters="linearRGB">
+                  <feComponentTransfer>
+                    <feFuncR id="gain-r" type="linear" slope="1"/>
+                    <feFuncG id="gain-g" type="linear" slope="1"/>
+                    <feFuncB id="gain-b" type="linear" slope="1"/>
+                  </feComponentTransfer>
+                </filter>
+                <filter id="background-blur" x="-10%" y="-20%" width="120%" height="140%">
+                  <feGaussianBlur id="background-blur-amount" stdDeviation="0"/>
+                </filter>
+                <filter id="motion-blur" x="-60%" y="-10%" width="220%" height="120%">
+                  <feGaussianBlur id="motion-blur-amount" stdDeviation="0 0"/>
+                </filter>
+                <filter id="noise" x="0" y="0" width="100%" height="100%">
+                  <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4"/>
+                  <feColorMatrix type="matrix" values="0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0 0 0 0 1"/>
+                </filter>
+              </defs>
+
+              <g filter="url(#exposure)">
+                <rect width="960" height="300" fill="url(#sky)"/>
+                <g transform="translate(160 0)">
+                <g filter="url(#background-blur)">
+                  <circle id="sun" cx="510" cy="70" r="26"/>
+                  <path id="hills" d="M-180 190 C -100 165 -40 200 -20 205 C 80 150 150 175 230 160 S 400 130 470 165 S 600 150 660 170 S 760 150 820 175 V 240 H -180 Z"/>
+                  <g id="buildings">
+                    <rect x="40" y="120" width="70" height="115"/>
+                    <rect x="118" y="95" width="52" height="140"/>
+                    <rect x="430" y="110" width="64" height="125"/>
+                    <rect x="502" y="140" width="80" height="95"/>
+                    <rect x="-140" y="130" width="60" height="105"/>
+                    <rect x="-70" y="100" width="48" height="135"/>
+                    <rect x="690" y="115" width="58" height="120"/>
+                  </g>
+                  <g id="windows">
+                    <rect x="52" y="135" width="12" height="10"/><rect x="82" y="135" width="12" height="10"/>
+                    <rect x="52" y="160" width="12" height="10"/><rect x="82" y="185" width="12" height="10"/>
+                    <rect x="128" y="110" width="10" height="10"/><rect x="150" y="135" width="10" height="10"/>
+                    <rect x="128" y="160" width="10" height="10"/><rect x="150" y="185" width="10" height="10"/>
+                    <rect x="442" y="125" width="12" height="10"/><rect x="470" y="150" width="12" height="10"/>
+                    <rect x="442" y="175" width="12" height="10"/><rect x="516" y="155" width="14" height="10"/>
+                    <rect x="550" y="180" width="14" height="10"/><rect x="516" y="205" width="14" height="10"/>
+                    <rect x="-128" y="145" width="12" height="10"/><rect x="-104" y="175" width="12" height="10"/>
+                    <rect x="-60" y="115" width="10" height="10"/><rect x="-42" y="150" width="10" height="10"/>
+                    <rect x="702" y="130" width="12" height="10"/><rect x="726" y="165" width="12" height="10"/>
+                  </g>
+                  <g id="trees">
+                    <rect x="246" y="175" width="6" height="60"/><circle cx="249" cy="165" r="26"/>
+                    <rect x="352" y="182" width="6" height="53"/><circle cx="355" cy="172" r="22"/>
+                    <rect x="600" y="180" width="6" height="55"/><circle cx="603" cy="170" r="24"/>
+                    <rect x="770" y="178" width="6" height="57"/><circle cx="773" cy="168" r="25"/>
+                  </g>
+                  <g id="lamps">
+                    <rect x="210" y="150" width="3" height="85"/><circle cx="211.5" cy="148" r="5"/>
+                    <rect x="400" y="150" width="3" height="85"/><circle cx="401.5" cy="148" r="5"/>
+                  </g>
+                </g>
+                </g>
+                <rect id="ground" y="232" width="960" height="68"/>
+                <rect id="road-line" x="0" y="268" width="960" height="3"/>
+                <g transform="translate(160 0)">
+                <g id="cyclist" filter="url(#motion-blur)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="282" cy="246" r="22" stroke-width="4"/>
+                  <circle cx="356" cy="246" r="22" stroke-width="4"/>
+                  <path d="M282 246 L310 210 L345 210 L356 246 M310 210 L320 246 L345 210 M304 200 L316 200 M340 202 L352 196" stroke-width="4"/>
+                  <path d="M314 196 L330 160 L348 198 M330 160 L338 220 L322 246" stroke-width="7"/>
+                  <circle id="cyclist-head" cx="333" cy="146" r="11" stroke="none"/>
+                </g>
+                </g>
+              </g>
+              <rect id="noise-layer" width="960" height="300" filter="url(#noise)" style="mix-blend-mode: overlay" opacity="0"/>
+            </svg>
+          </div>
+
+          <div class="meter">
+            <div class="meter-heading"><span>노출계</span><span>적정 노출 대비 (EV)</span></div>
+            <div class="meter-scale" id="meter-scale" aria-hidden="true">
+              <div class="meter-line"></div>
+              <div class="meter-marker" id="meter-marker"></div>
+            </div>
+          </div>
+
+          <div class="effects">
+            <div class="effect">
+              <div class="effect-head"><span>배경 흐림 · 피사계 심도</span><span class="effect-source">조리개</span></div>
+              <span class="effect-value" id="dof-value">—</span>
+              <div class="effect-bar"><span id="dof-bar"></span></div>
+              <div class="effect-scale" aria-hidden="true"><span>얕음</span><span>깊음</span></div>
+              <p class="effect-note" id="dof-note"></p>
+            </div>
+            <div class="effect">
+              <div class="effect-head"><span>움직임 흐림</span><span class="effect-source">셔터 속도</span></div>
+              <span class="effect-value" id="motion-value">—</span>
+              <div class="effect-bar"><span id="motion-bar"></span></div>
+              <div class="effect-scale" aria-hidden="true"><span>멈춤</span><span>흐름</span></div>
+              <p class="effect-note" id="motion-note"></p>
+            </div>
+            <div class="effect">
+              <div class="effect-head"><span>노이즈</span><span class="effect-source">ISO</span></div>
+              <span class="effect-value" id="noise-value">—</span>
+              <div class="effect-bar"><span id="noise-bar"></span></div>
+              <div class="effect-scale" aria-hidden="true"><span>깨끗함</span><span>거침</span></div>
+              <p class="effect-note" id="noise-note"></p>
+            </div>
+          </div>
+
+          <p class="graph-note">
+            밝기는 적정 노출과의 차이(EV)만큼 빛의 양을 곱해 나타낸 <strong>근사 미리보기</strong>입니다.
+            <span class="range-note">효과 수치는 풀프레임 50 mm 렌즈로 3 m 앞을 지나는 자전거(18 km/h)를 찍는 상황을 기준으로 합니다.</span>
+          </p>
+          <noscript>미리보기를 보려면 브라우저에서 JavaScript를 사용 설정해 주세요.</noscript>
+        </section>
+
+        <aside class="card control-card" aria-labelledby="controls-title">
+          <form id="controls-form">
+            <div class="card-heading">
+              <div>
+                <p class="card-index">02 / CAMERA SETTINGS</p>
+                <h2 id="controls-title">카메라 설정</h2>
+                <p class="card-description">하나를 바꾸면 자동 값이 반대로 움직여 밝기를 맞춥니다.</p>
+              </div>
+              <button class="reset" type="reset">초기화</button>
+            </div>
+
+            <div class="controls">
+              <div class="control">
+                <div class="control-header">
+                  <label class="control-name" for="scene-select"><span class="control-number">01</span>장면 밝기</label>
+                </div>
+                <select id="scene-select" aria-describedby="scene-help">
+                  <option value="0">맑은 날 · 눈밭이나 해변 (EV 16)</option>
+                  <option value="1">맑은 날 (EV 15)</option>
+                  <option value="2">옅은 구름 (EV 13)</option>
+                  <option value="3" selected>흐린 날 (EV 12)</option>
+                  <option value="4">해 질 녘 (EV 10)</option>
+                  <option value="5">해 진 직후 (EV 8)</option>
+                  <option value="6">밝은 밤거리 (EV 5)</option>
+                  <option value="7">어두운 밤거리 (EV 2)</option>
+                </select>
+                <p class="control-help" id="scene-help">ISO 100에서 적정 노출이 되는 노출값(EV100)</p>
+              </div>
+
+              <fieldset class="control mode">
+                <legend class="control-name"><span class="control-number">02</span>자동으로 맞출 값</legend>
+                <div class="segmented">
+                  <label><input type="radio" name="mode" value="shutter" checked><span>셔터</span></label>
+                  <label><input type="radio" name="mode" value="aperture"><span>조리개</span></label>
+                  <label><input type="radio" name="mode" value="iso"><span>ISO</span></label>
+                  <label><input type="radio" name="mode" value="manual"><span>수동</span></label>
+                </div>
+              </fieldset>
+
+              <div class="control" id="aperture-control">
+                <div class="control-header">
+                  <label class="control-name" for="aperture"><span class="control-number">03</span>조리개<span class="auto-badge">AUTO</span></label>
+                  <output class="control-value" id="aperture-output" for="aperture">f/4</output>
+                </div>
+                <input id="aperture" type="range" min="0" max="24" step="1" value="9">
+                <div class="range-labels" aria-hidden="true"><span>f/1.4 &nbsp; 빛 많이</span><span>f/22 &nbsp; 빛 적게</span></div>
+              </div>
+
+              <div class="control" id="shutter-control">
+                <div class="control-header">
+                  <label class="control-name" for="shutter"><span class="control-number">04</span>셔터 속도<span class="auto-badge">AUTO</span></label>
+                  <output class="control-value" id="shutter-output" for="shutter">1/500 s</output>
+                </div>
+                <input id="shutter" type="range" min="0" max="54" step="1" value="42">
+                <div class="range-labels" aria-hidden="true"><span>30 s &nbsp; 빛 많이</span><span>1/8000 s &nbsp; 빛 적게</span></div>
+              </div>
+
+              <div class="control" id="iso-control">
+                <div class="control-header">
+                  <label class="control-name" for="iso"><span class="control-number">05</span>ISO 감도<span class="auto-badge">AUTO</span></label>
+                  <output class="control-value" id="iso-output" for="iso">ISO 200</output>
+                </div>
+                <input id="iso" type="range" min="0" max="24" step="1" value="3">
+                <div class="range-labels" aria-hidden="true"><span>100 &nbsp; 빛 적게</span><span>25600 &nbsp; 빛 많이</span></div>
+              </div>
+            </div>
+
+            <section class="tip" aria-roledescription="carousel" aria-labelledby="tip-heading">
+              <div class="tip-header">
+                <p class="tip-title" id="tip-heading">살펴보기 <span class="tip-counter" id="tip-counter" aria-live="polite"></span></p>
+                <div class="tip-nav" role="group" aria-label="살펴보기 넘기기">
+                  <button class="tip-button" type="button" id="tip-prev" aria-label="이전 내용">&#8249;</button>
+                  <button class="tip-button" type="button" id="tip-next" aria-label="다음 내용">&#8250;</button>
+                </div>
+              </div>
+              <div class="tip-slide" data-tip><p class="tip-subtitle">같은 밝기, 다른 사진</p><p class="tip-body">셔터를 1스톱 빠르게 하고 조리개를 1스톱 열면 밝기는 그대로입니다. 밝기를 맞추는 조합은 여러 개지만, 배경 흐림·움직임·노이즈가 달라집니다.</p></div>
+              <div class="tip-slide" data-tip hidden><p class="tip-subtitle">스톱이란</p><p class="tip-body">빛의 양이 두 배 또는 절반이 되는 단계를 1스톱이라고 합니다. 셔터 시간과 ISO는 2배, f값은 약 1.4배(√2)마다 1스톱이며, 슬라이더 한 칸은 1/3스톱입니다.</p></div>
+              <div class="tip-slide" data-tip hidden><p class="tip-subtitle">노출값(EV)</p><p class="tip-body">EV = log₂(N²/t) − log₂(ISO/100)입니다. 설정 EV가 장면 밝기보다 1 작으면 빛을 두 배 받아 1스톱 밝게 찍힙니다.</p></div>
+              <div class="tip-slide" data-tip hidden><p class="tip-subtitle">1/초점거리 규칙</p><p class="tip-body">손으로 들고 찍을 때는 셔터 속도를 1/초점거리 초보다 빠르게 두면 흔들림을 줄일 수 있습니다. 50 mm 렌즈라면 1/50 s 정도가 기준입니다.</p></div>
+              <div class="tip-slide" data-tip hidden><p class="tip-subtitle">ISO는 빛을 늘리지 않는다</p><p class="tip-body">ISO는 센서가 받은 신호를 증폭할 뿐 빛을 더 모으지 않습니다. 받은 빛이 적을수록 노이즈가 상대적으로 커지기 때문에, 가능하면 조리개와 셔터로 빛을 먼저 확보하는 편이 좋습니다.</p></div>
+            </section>
+          </form>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>EV100 = log₂(N²/t) − log₂(ISO/100) 기준의 근사치입니다. 실제 결과는 측광 방식, 장면의 반사율, 센서 성능 등에 따라 달라집니다.</p>
+      <p class="footer-mark">FOCUS NOTES &nbsp; / &nbsp; 02</p>
+    </footer>
+  </div>
+
+  <script>
+    "use strict";
+
+    const APERTURE_LABELS = ["1.4", "1.6", "1.8", "2", "2.2", "2.5", "2.8", "3.2", "3.5", "4", "4.5", "5", "5.6",
+      "6.3", "7.1", "8", "9", "10", "11", "13", "14", "16", "18", "20", "22"];
+    const SHUTTER_LABELS = ["30", "25", "20", "15", "13", "10", "8", "6", "5", "4", "3.2", "2.5", "2", "1.6", "1.3",
+      "1", "0.8", "0.6", "0.5", "0.4", "0.3", "1/4", "1/5", "1/6", "1/8", "1/10", "1/13", "1/15", "1/20", "1/25",
+      "1/30", "1/40", "1/50", "1/60", "1/80", "1/100", "1/125", "1/160", "1/200", "1/250", "1/320", "1/400",
+      "1/500", "1/640", "1/800", "1/1000", "1/1250", "1/1600", "1/2000", "1/2500", "1/3200", "1/4000", "1/5000",
+      "1/6400", "1/8000"];
+    const ISO_LABELS = [100, 125, 160, 200, 250, 320, 400, 500, 640, 800, 1000, 1250, 1600, 2000, 2500, 3200,
+      4000, 5000, 6400, 8000, 10000, 12800, 16000, 20000, 25600];
+    const SCENES = [
+      { ev: 16, name: "맑은 날 눈밭", sky: ["#5c9fdc", "#cfe6f6"], sun: "#fffbe8", land: "#dfe3e6", ground: "#eceff0", building: "#b9c3cc", tree: "#6f8c78", windows: 0, lamps: 0 },
+      { ev: 15, name: "맑은 날", sky: ["#4f93d4", "#b9dbf2"], sun: "#fff6d8", land: "#7f9f6a", ground: "#8a8d84", building: "#c9bfae", tree: "#3f6f43", windows: 0, lamps: 0 },
+      { ev: 13, name: "옅은 구름", sky: ["#7fa6c9", "#d3dfe7"], sun: "#f4f1e6", land: "#728f63", ground: "#83867f", building: "#b8b2a6", tree: "#3d6340", windows: 0, lamps: 0 },
+      { ev: 12, name: "흐린 날", sky: ["#98a4ad", "#cfd4d6"], sun: null, land: "#677d5c", ground: "#7a7d78", building: "#a6a39c", tree: "#3b5a3d", windows: 0, lamps: 0 },
+      { ev: 10, name: "해 질 녘", sky: ["#4c5d92", "#f2a765"], sun: "#ffd29a", land: "#4f5a46", ground: "#5d5852", building: "#6e6670", tree: "#2f3e30", windows: .45, lamps: .4 },
+      { ev: 8, name: "해 진 직후", sky: ["#1f2d5c", "#6f7fb3"], sun: null, land: "#2d3a3a", ground: "#3a3d45", building: "#3f4559", tree: "#1e2c27", windows: .85, lamps: .9 },
+      { ev: 5, name: "밝은 밤거리", sky: ["#0b1022", "#28304f"], sun: null, land: "#1a2124", ground: "#2f2c2b", building: "#2a2d3a", tree: "#131b18", windows: 1, lamps: 1 },
+      { ev: 2, name: "어두운 밤거리", sky: ["#05070f", "#141a2c"], sun: null, land: "#0f1414", ground: "#1c1b1c", building: "#191b24", tree: "#0b100e", windows: .7, lamps: .8 }
+    ];
+    const REFERENCE = { focal: 50, distance: 3000, circle: 0.03, sensorWidth: 36, pixels: 6000, speed: 5 };
+
+    const form = document.getElementById("controls-form");
+    const sceneInput = document.getElementById("scene-select");
+    const apertureInput = document.getElementById("aperture");
+    const shutterInput = document.getElementById("shutter");
+    const isoInput = document.getElementById("iso");
+    const inputs = { aperture: apertureInput, shutter: shutterInput, iso: isoInput };
+
+    const apertureNumber = index => 2 ** ((3 + index) / 6);
+    const shutterSeconds = index => 2 ** (-(index - 15) / 3);
+    const isoValue = index => 100 * 2 ** (index / 3);
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+    const $ = id => document.getElementById(id);
+
+    function formatNumber(value, digits) {
+      return new Intl.NumberFormat("ko-KR", {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      }).format(value);
+    }
+
+    function formatSigned(value) {
+      const rounded = Math.round(value * 10) / 10;
+      if (rounded === 0) return "0.0";
+      return `${rounded > 0 ? "+" : "-"}${formatNumber(Math.abs(rounded), 1)}`;
+    }
+
+    function formatDepth(depth) {
+      if (!Number.isFinite(depth)) return "∞";
+      if (depth < 1) return `${formatNumber(depth * 100, 1)} cm`;
+      return `${formatNumber(depth, 2)} m`;
+    }
+
+    const formatAperture = index => `f/${APERTURE_LABELS[index]}`;
+    const formatShutter = index => `${SHUTTER_LABELS[index]} s`;
+    const formatIso = index => `ISO ${ISO_LABELS[index]}`;
+
+    // All settings are tracked in 1/3-stop indices so EV sums stay exact.
+    function solveExposure(mode, sceneThirds, indices) {
+      const next = { ...indices };
+      let clamped = false;
+      const solve = (key, ideal, max) => {
+        next[key] = clamp(ideal, 0, max);
+        clamped = next[key] !== ideal;
+      };
+      if (mode === "shutter") solve("shutter", sceneThirds - next.aperture + next.iso + 12, 54);
+      if (mode === "aperture") solve("aperture", sceneThirds - next.shutter + next.iso + 12, 24);
+      if (mode === "iso") solve("iso", next.aperture + next.shutter - 12 - sceneThirds, 24);
+      const settingsThirds = next.aperture + next.shutter - next.iso - 12;
+      return { indices: next, settingsThirds, difference: (sceneThirds - settingsThirds) / 3, clamped };
+    }
+
+    function depthOfField(aperture) {
+      const { focal, distance, circle } = REFERENCE;
+      const tolerance = aperture * circle * (distance - focal);
+      const focalSquared = focal * focal;
+      const near = focalSquared * distance / (focalSquared + tolerance) / 1000;
+      const far = tolerance >= focalSquared ? Infinity : focalSquared * distance / (focalSquared - tolerance) / 1000;
+      return far - near;
+    }
+
+    function buildMeter() {
+      const scale = $("meter-scale");
+      for (let third = -9; third <= 9; third += 1) {
+        const position = `${(third + 9) / 18 * 100}%`;
+        const tick = document.createElement("span");
+        tick.className = `meter-tick${third % 3 === 0 ? " is-major" : ""}${third === 0 ? " is-zero" : ""}`;
+        tick.style.left = position;
+        scale.append(tick);
+        if (third % 3 === 0) {
+          const label = document.createElement("span");
+          label.className = "meter-label";
+          label.style.left = position;
+          label.textContent = third > 0 ? `+${third / 3}` : `${third / 3}`;
+          scale.append(label);
+        }
+      }
+    }
+
+    function paintScene(scene) {
+      $("sky-top").setAttribute("stop-color", scene.sky[0]);
+      $("sky-bottom").setAttribute("stop-color", scene.sky[1]);
+      $("sun").setAttribute("fill", scene.sun || "none");
+      $("sun").setAttribute("cy", scene.ev === 10 ? 150 : 70);
+      $("hills").setAttribute("fill", scene.land);
+      $("ground").setAttribute("fill", scene.ground);
+      $("road-line").setAttribute("fill", scene.windows > .5 ? "#6d6450" : "#d9d6c8");
+      $("buildings").setAttribute("fill", scene.building);
+      $("trees").setAttribute("fill", scene.tree);
+      $("windows").setAttribute("fill", "#ffd98a");
+      $("windows").setAttribute("opacity", scene.windows);
+      $("lamps").setAttribute("fill", scene.lamps > 0 ? "#ffe2a8" : scene.building);
+      const cyclistColor = scene.windows > .5 ? "#a64a3c" : "#c0392b";
+      $("cyclist").setAttribute("stroke", cyclistColor);
+      $("cyclist-head").setAttribute("fill", cyclistColor);
+    }
+
+    function setEffect(name, value, ratio, note, warning = false) {
+      $(`${name}-value`).textContent = value;
+      $(`${name}-bar`).style.width = `${clamp(ratio, 0, 1) * 100}%`;
+      $(`${name}-note`).textContent = note;
+      $(`${name}-note`).classList.toggle("is-warning", warning);
+    }
+
+    function setRangeProgress(input) {
+      const percent = (Number(input.value) - Number(input.min)) / (Number(input.max) - Number(input.min)) * 100;
+      input.style.setProperty("--progress", `${percent}%`);
+    }
+
+    function render() {
+      const scene = SCENES[Number(sceneInput.value)];
+      const mode = form.elements.mode.value;
+      const solved = solveExposure(mode, scene.ev * 3, {
+        aperture: Number(apertureInput.value),
+        shutter: Number(shutterInput.value),
+        iso: Number(isoInput.value)
+      });
+      const { indices, difference } = solved;
+
+      Object.entries(inputs).forEach(([key, input]) => {
+        input.value = indices[key];
+        input.disabled = key === mode;
+        $(`${key}-control`).classList.toggle("is-auto", key === mode);
+        setRangeProgress(input);
+      });
+      $("aperture-output").textContent = formatAperture(indices.aperture);
+      $("shutter-output").textContent = formatShutter(indices.shutter);
+      $("iso-output").textContent = formatIso(indices.iso);
+      apertureInput.setAttribute("aria-valuetext", formatAperture(indices.aperture));
+      shutterInput.setAttribute("aria-valuetext", formatShutter(indices.shutter));
+      isoInput.setAttribute("aria-valuetext", formatIso(indices.iso));
+
+      const absolute = Math.abs(difference);
+      const state = absolute < 0.2 ? "적정"
+        : difference > 3 ? "과다" : difference < -3 ? "부족"
+        : difference > 0 ? "밝음" : "어두움";
+      $("exposure-value").textContent = formatSigned(difference);
+      $("exposure-state").textContent = `(${state})`;
+      $("scene-ev").textContent = `EV ${scene.ev}`;
+      $("settings-ev").textContent = `EV ${formatNumber(solved.settingsThirds / 3, 1)}`;
+      const autoText = {
+        shutter: formatShutter(indices.shutter),
+        aperture: formatAperture(indices.aperture),
+        iso: formatIso(indices.iso),
+        manual: "수동"
+      };
+      $("auto-value").textContent = autoText[mode];
+      $("auto-note").textContent = solved.clamped ? "(범위 한계)" : "";
+
+      const marker = $("meter-marker");
+      marker.style.left = `${(clamp(difference, -3, 3) + 3) / 6 * 100}%`;
+      marker.classList.toggle("is-off", absolute >= 0.2);
+
+      const aperture = apertureNumber(indices.aperture);
+      const seconds = shutterSeconds(indices.shutter);
+      const iso = isoValue(indices.iso);
+      const { focal, distance, sensorWidth, pixels, speed } = REFERENCE;
+      const magnification = focal / (distance - focal);
+      const backgroundBlurMm = focal * magnification / aperture;
+      const motionBlurMm = speed * seconds * 1000 * magnification;
+      const motionPixels = motionBlurMm / sensorWidth * pixels;
+      const noiseRatio = Math.sqrt(iso / 100);
+      const shakeRisk = seconds > 1 / focal + 1e-9;
+
+      setEffect("dof", formatDepth(depthOfField(aperture)), indices.aperture / 24,
+        `먼 배경의 흐림 지름은 사진 폭의 약 ${formatNumber(backgroundBlurMm / sensorWidth * 100, 1)}%입니다.`);
+      setEffect("motion",
+        motionPixels < 1 ? "1 px 미만" : `약 ${formatNumber(motionPixels, motionPixels < 10 ? 1 : 0)} px`,
+        Math.log10(motionPixels + 1) / 4,
+        shakeRisk
+          ? "1/50 s보다 느려 손떨림이 생기기 쉽습니다. 삼각대를 고려하세요."
+          : `자전거가 6000 px 폭 사진에서 이동하는 거리입니다.`,
+        shakeRisk);
+      setEffect("noise", `× ${formatNumber(noiseRatio, 1)}`, indices.iso / 24,
+        "ISO 100 대비 상대적인 노이즈 크기입니다(받은 빛의 제곱근에 반비례).");
+
+      const viewWidth = 960;
+      const gain = 2 ** difference;
+      ["r", "g", "b"].forEach(channel => $(`gain-${channel}`).setAttribute("slope", gain.toFixed(4)));
+      $("background-blur-amount").setAttribute("stdDeviation",
+        Math.min(24, backgroundBlurMm / sensorWidth * viewWidth / 3).toFixed(2));
+      $("motion-blur-amount").setAttribute("stdDeviation",
+        `${Math.min(30, motionBlurMm / sensorWidth * viewWidth / 3).toFixed(2)} 0`);
+      $("noise-layer").setAttribute("opacity", Math.min(0.6, 0.03 + 0.035 * (noiseRatio - 1)).toFixed(3));
+      paintScene(scene);
+      $("scene-description").textContent =
+        `${scene.name} 장면을 ${formatAperture(indices.aperture)}, ${formatShutter(indices.shutter)}, ${formatIso(indices.iso)}로 찍은 모습입니다. 적정 노출 대비 ${formatSigned(difference)} EV입니다.`;
+    }
+
+    const tipSlides = Array.from(document.querySelectorAll("[data-tip]"));
+    let tipIndex = 0;
+
+    function showTip(index) {
+      tipIndex = (index + tipSlides.length) % tipSlides.length;
+      tipSlides.forEach((slide, slideIndex) => { slide.hidden = slideIndex !== tipIndex; });
+      $("tip-counter").textContent = `${tipIndex + 1} / ${tipSlides.length}`;
+    }
+
+    $("tip-prev").addEventListener("click", () => showTip(tipIndex - 1));
+    $("tip-next").addEventListener("click", () => showTip(tipIndex + 1));
+    showTip(0);
+
+    buildMeter();
+    form.addEventListener("input", render);
+    form.addEventListener("change", render);
+    form.addEventListener("reset", () => requestAnimationFrame(render));
+    render();
+  </script>
+</body>
+</html>
