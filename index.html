@@ -367,8 +367,33 @@
       background: #202e25;
     }
 
-    .tip-title { margin: 0 0 5px; color: #c8dfbf; font-size: 11px; font-weight: 700; }
-    .tip p:last-child { margin: 0; color: #a7baaa; font-size: 11px; line-height: 1.7; word-break: keep-all; }
+    .tip-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .tip-title { margin: 0; color: #c8dfbf; font-size: 11px; font-weight: 700; }
+    .tip-counter { margin-left: 6px; color: var(--faint); font-weight: 500; font-variant-numeric: tabular-nums; }
+    .tip-nav { display: inline-flex; flex: none; border: 1px solid #3b4c3b; border-radius: 5px; overflow: hidden; }
+    .tip-button {
+      width: 26px;
+      height: 22px;
+      padding: 0;
+      border: 0;
+      background: #1a2720;
+      color: #c8dfbf;
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1;
+    }
+    .tip-button + .tip-button { border-left: 1px solid #3b4c3b; }
+    .tip-button:hover { background: #2a3d2f; color: var(--text); }
+    .tip-subtitle { margin: 0 0 4px; color: #dce9d5; font-size: 11px; font-weight: 600; }
+    .tip-body { margin: 0; color: #a7baaa; font-size: 11px; line-height: 1.7; word-break: keep-all; }
+
+    .readout-delta {
+      color: var(--muted);
+      font-size: .62em;
+      font-weight: 500;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
 
     .footer {
       display: flex;
@@ -456,11 +481,11 @@
             </div>
             <div class="readout">
               <span class="readout-label">가까운 경계</span>
-              <span class="readout-value" id="near-value">—</span>
+              <span class="readout-value"><span id="near-value">—</span> <span class="readout-delta" id="near-delta"></span></span>
             </div>
             <div class="readout">
               <span class="readout-label">먼 경계</span>
-              <span class="readout-value" id="far-value">—</span>
+              <span class="readout-value"><span id="far-value">—</span> <span class="readout-delta" id="far-delta"></span></span>
             </div>
             <div class="readout">
               <span class="readout-label">과초점 거리</span>
@@ -538,10 +563,19 @@
               </div>
             </div>
 
-            <div class="tip">
-              <p class="tip-title">살펴보기</p>
-              <p>조리개를 조이면 일반적으로 선명한 범위가 넓어지고, 피사체에 가까이 다가가면 좁아집니다.</p>
-            </div>
+            <section class="tip" aria-roledescription="carousel" aria-labelledby="tip-heading">
+              <div class="tip-header">
+                <p class="tip-title" id="tip-heading">살펴보기 <span class="tip-counter" id="tip-counter" aria-live="polite"></span></p>
+                <div class="tip-nav" role="group" aria-label="살펴보기 넘기기">
+                  <button class="tip-button" type="button" id="tip-prev" aria-label="이전 내용">&#8249;</button>
+                  <button class="tip-button" type="button" id="tip-next" aria-label="다음 내용">&#8250;</button>
+                </div>
+              </div>
+              <div class="tip-slide" data-tip><p class="tip-subtitle">조리개와 거리</p><p class="tip-body">조리개를 조이면 일반적으로 선명한 범위가 넓어지고, 피사체에 가까이 다가가면 좁아집니다.</p></div>
+              <div class="tip-slide" data-tip hidden><p class="tip-subtitle">과초점 거리</p><p class="tip-body">과초점 거리에 초점을 맞추면 그 거리의 약 절반부터 무한대까지 선명하게 담깁니다. 풍경처럼 앞쪽과 먼 배경을 함께 선명하게 찍을 때 유용하며, 초점 맞춘 거리가 과초점 거리 이상이면 먼 경계가 무한대가 됩니다. 조리개를 조이거나 초점거리가 짧은 렌즈를 쓰면 과초점 거리가 가까워집니다.</p></div>
+              <div class="tip-slide" data-tip hidden><p class="tip-subtitle">앞뒤의 비대칭</p><p class="tip-body">선명한 범위는 초점면 앞보다 뒤쪽으로 더 길게 이어집니다. 가까운 경계와 먼 경계 옆의 괄호 값으로 초점에서 얼마나 떨어져 있는지 비교해 보세요.</p></div>
+              <div class="tip-slide" data-tip hidden><p class="tip-subtitle">렌즈 초점거리</p><p class="tip-body">같은 거리, 같은 조리개라도 초점거리가 긴 망원 렌즈일수록 피사계 심도가 얕아져 배경이 더 많이 흐려집니다.</p></div>
+            </section>
           </form>
         </aside>
       </div>
@@ -610,8 +644,17 @@
 
     function formatBoundary(value, depth) {
       if (!Number.isFinite(value)) return "∞";
-      const digits = depth < 0.01 ? 4 : depth < 0.1 ? 3 : 2;
-      return `${formatNumber(value, digits)} m`;
+      return `${formatNumber(value, boundaryDigits(depth))} m`;
+    }
+
+    function formatBoundaryDelta(delta, depth) {
+      if (!Number.isFinite(delta)) return "(+∞)";
+      const sign = delta < 0 ? "-" : "+";
+      return `(${sign}${formatNumber(Math.abs(delta), boundaryDigits(depth))} m)`;
+    }
+
+    function boundaryDigits(depth) {
+      return depth < 0.01 ? 4 : depth < 0.1 ? 3 : 2;
     }
 
     function formatCircle(value) {
@@ -747,11 +790,26 @@
       document.getElementById("depth-unit").textContent = depth.unit;
       document.getElementById("near-value").textContent = formatBoundary(result.near, result.depth);
       document.getElementById("far-value").textContent = formatBoundary(result.far, result.depth);
+      document.getElementById("near-delta").textContent = formatBoundaryDelta(result.near - settings.focus, result.depth);
+      document.getElementById("far-delta").textContent = formatBoundaryDelta(result.far - settings.focus, result.depth);
       document.getElementById("hyperfocal-value").textContent = `${formatNumber(result.hyperfocal, 2)} m`;
       document.getElementById("threshold-label").textContent = `허용 기준 (${settings.circle.toFixed(3)} mm)`;
       [focalInput, apertureInput, focusInput].forEach(setRangeProgress);
       drawChart(settings, result);
     }
+
+    const tipSlides = Array.from(document.querySelectorAll("[data-tip]"));
+    let tipIndex = 0;
+
+    function showTip(index) {
+      tipIndex = (index + tipSlides.length) % tipSlides.length;
+      tipSlides.forEach((slide, slideIndex) => { slide.hidden = slideIndex !== tipIndex; });
+      document.getElementById("tip-counter").textContent = `${tipIndex + 1} / ${tipSlides.length}`;
+    }
+
+    document.getElementById("tip-prev").addEventListener("click", () => showTip(tipIndex - 1));
+    document.getElementById("tip-next").addEventListener("click", () => showTip(tipIndex + 1));
+    showTip(0);
 
     form.addEventListener("input", render);
     form.addEventListener("reset", () => requestAnimationFrame(render));
