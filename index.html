@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>초점의 앞과 뒤 | 피사계 심도 시각화</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
+      font-synthesis: none;
+      --background: #0c1314;
+      --panel: #151f20;
+      --border: #2b3a38;
+      --text: #edf2eb;
+      --muted: #9bab9f;
+      --faint: #71847b;
+      --green: #b7dfb3;
+      --yellow: #e9c987;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 15% -20%, #263c31 0, transparent 40%),
+        var(--background);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, select { font: inherit; }
+    button, select, input { accent-color: var(--green); }
+    :focus-visible { outline: 2px solid var(--yellow); outline-offset: 4px; }
+
+    .shell {
+      width: min(1440px, calc(100% - 96px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      border-bottom: 1px solid #293734;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .14em;
+    }
+
+    .brand-mark {
+      width: 31px;
+      height: 31px;
+      color: var(--green);
+    }
+
+    .top-note, .eyebrow, .card-index, .control-number {
+      font-family: "Consolas", "SFMono-Regular", monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .top-note { color: var(--faint); }
+
+    .intro {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 30px;
+      padding: 48px 0 34px;
+    }
+
+    .eyebrow { margin: 0 0 13px; color: var(--green); }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 3.2vw, 45px);
+      line-height: 1.2;
+      letter-spacing: -.055em;
+    }
+
+    .intro-copy {
+      margin: 13px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.8;
+      word-break: keep-all;
+    }
+
+    .draft-tag {
+      flex: none;
+      padding: 9px 12px;
+      border: 1px solid #3c4b3d;
+      border-radius: 6px;
+      color: #c8d6c3;
+      font-family: "Consolas", monospace;
+      font-size: 10px;
+      letter-spacing: .1em;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.8fr) minmax(300px, .82fr);
+      align-items: start;
+      gap: 18px;
+    }
+
+    .card {
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: linear-gradient(155deg, #182423, var(--panel) 64%);
+    }
+
+    .graph-card { padding: 27px 28px 25px; }
+    .control-card { padding: 27px 25px 24px; }
+
+    .card-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 16px;
+    }
+
+    .card-index { margin: 0 0 9px; color: #8ca897; }
+
+    h2 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -.04em;
+    }
+
+    .card-description {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+      word-break: keep-all;
+    }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+      padding: 7px 9px;
+      border: 1px solid #3b5140;
+      border-radius: 5px;
+      color: var(--green);
+      font-size: 10px;
+    }
+
+    .live-badge::before {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      content: "";
+    }
+
+    .readouts {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr 1fr;
+      gap: 12px;
+      margin: 27px 0 21px;
+      padding: 20px 0;
+      border-top: 1px solid #34423e;
+      border-bottom: 1px solid #34423e;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .readout + .readout {
+      padding-left: 18px;
+      border-left: 1px solid #34423e;
+    }
+
+    .readout-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .readout-value {
+      display: block;
+      overflow-wrap: anywhere;
+      font-size: clamp(15px, 1.45vw, 20px);
+      font-weight: 700;
+      letter-spacing: -.035em;
+    }
+
+    .readout-primary .readout-value {
+      color: var(--green);
+      font-size: clamp(21px, 2.2vw, 30px);
+      line-height: 1.15;
+    }
+
+    .readout-unit { font-size: .55em; font-weight: 500; }
+
+    .plot-frame {
+      padding: 16px 15px 11px 8px;
+      border: 1px solid #2a3935;
+      border-radius: 9px;
+      background: #101a19;
+    }
+
+    .plot-heading {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 2px 3px 9px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .plot-heading span:last-child { color: var(--faint); }
+
+    #chart {
+      display: block;
+      width: 100%;
+      height: 310px;
+      overflow: hidden;
+      font-family: inherit;
+    }
+
+    .chart-grid { stroke: #30403a; stroke-width: 1; }
+    .chart-zone { fill: #91c897; fill-opacity: .12; }
+    .chart-boundary { stroke: #8dba91; stroke-opacity: .48; stroke-dasharray: 4 5; }
+    .chart-threshold { stroke: var(--yellow); stroke-width: 1.4; stroke-dasharray: 5 5; }
+    .chart-focus { stroke: #bad6bf; stroke-opacity: .7; stroke-dasharray: 3 5; }
+    .chart-curve { fill: none; stroke: #c5e8c1; stroke-width: 2.5; stroke-linejoin: round; }
+    .chart-tick { fill: #9bad9f; font-size: 11px; font-variant-numeric: tabular-nums; }
+    .chart-focus-label { fill: #dcead9; font-size: 10px; font-weight: 600; }
+
+    .axis-caption {
+      margin: -1px 0 2px;
+      color: var(--muted);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 11px 19px;
+      margin-top: 19px;
+      color: #bac9bd;
+      font-size: 11px;
+    }
+
+    .legend-item { display: inline-flex; align-items: center; gap: 7px; }
+    .legend-line { width: 19px; border-top: 2px solid #c5e8c1; }
+    .legend-threshold { width: 19px; border-top: 1px dashed var(--yellow); }
+    .legend-zone { width: 12px; height: 12px; border: 1px solid #769e79; background: #314939; }
+
+    .graph-note {
+      margin: 15px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.8;
+      word-break: keep-all;
+    }
+
+    .graph-note strong { color: #d6e5d7; font-weight: 600; }
+    .range-note { display: block; color: var(--faint); }
+
+    .reset {
+      padding: 4px 0;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11px;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .reset:hover { color: var(--text); }
+
+    .controls { margin-top: 25px; }
+    .control + .control { margin-top: 25px; }
+
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 13px;
+    }
+
+    .control-name { color: #dce6db; font-size: 12px; font-weight: 600; }
+    .control-number { margin-right: 7px; color: #789084; font-size: 9px; }
+    .control-value { color: var(--green); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    input[type="range"] {
+      display: block;
+      width: 100%;
+      height: 18px;
+      margin: 0;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 3px;
+      border-radius: 3px;
+      background: linear-gradient(to right, var(--green) var(--progress, 0%), #405049 var(--progress, 0%));
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      width: 14px;
+      height: 14px;
+      margin-top: -5.5px;
+      appearance: none;
+      border: 3px solid #c4e6bd;
+      border-radius: 50%;
+      background: #263b2c;
+    }
+
+    input[type="range"]::-moz-range-track { height: 3px; border-radius: 3px; background: #405049; }
+    input[type="range"]::-moz-range-progress { height: 3px; border-radius: 3px; background: var(--green); }
+    input[type="range"]::-moz-range-thumb { width: 8px; height: 8px; border: 3px solid #c4e6bd; border-radius: 50%; background: #263b2c; }
+
+    .range-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 4px;
+      color: var(--faint);
+      font-size: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    select {
+      width: 100%;
+      min-height: 41px;
+      padding: 0 11px;
+      border: 1px solid #405049;
+      border-radius: 6px;
+      background: #101a19;
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .control-help { margin: 9px 0 0; color: var(--faint); font-size: 10px; line-height: 1.6; }
+
+    .tip {
+      margin-top: 27px;
+      padding: 15px;
+      border: 1px solid #3b4c3b;
+      border-radius: 7px;
+      background: #202e25;
+    }
+
+    .tip-title { margin: 0 0 5px; color: #c8dfbf; font-size: 11px; font-weight: 700; }
+    .tip p:last-child { margin: 0; color: #a7baaa; font-size: 11px; line-height: 1.7; word-break: keep-all; }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 24px 0 36px;
+      color: var(--faint);
+      font-size: 10px;
+      line-height: 1.7;
+    }
+
+    .footer p { margin: 0; }
+    .footer-mark { flex: none; font-family: "Consolas", monospace; letter-spacing: .08em; }
+
+    noscript { display: block; padding: 14px 0; color: var(--yellow); }
+
+    @media (max-width: 920px) {
+      .shell { width: min(760px, calc(100% - 48px)); }
+      .workspace { grid-template-columns: 1fr; }
+      .control-card { padding: 25px 28px; }
+      .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+      .control + .control { margin-top: 0; }
+    }
+
+    @media (max-width: 520px) {
+      .shell { width: calc(100% - 32px); }
+      .topbar { min-height: 64px; }
+      .top-note, .draft-tag { display: none; }
+      .intro { padding: 34px 0 25px; }
+      .intro-copy { font-size: 13px; }
+      .graph-card, .control-card { padding: 22px 18px; }
+      .live-badge { font-size: 9px; }
+      .readouts { gap: 8px; margin-top: 22px; }
+      .readout + .readout { padding-left: 10px; }
+      .readout-label { font-size: 10px; }
+      .readout-value { font-size: 14px; }
+      .readout-primary .readout-value { font-size: 20px; }
+      .plot-frame { padding-right: 8px; padding-left: 2px; }
+      #chart { height: 280px; }
+      .controls { grid-template-columns: 1fr; gap: 25px; }
+      .footer { display: block; }
+      .footer-mark { margin-top: 9px !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <circle cx="16" cy="16" r="13.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M12.1 3.2 19.7 16h9M28.7 12.1 15.9 19.7l-4.5 7.8M19.9 28.7 12.3 15.9H3.2M3.3 19.9 16.1 12.3l4.5-7.8" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        </svg>
+        <span>FOCUS NOTES</span>
+      </div>
+      <span class="top-note">A LITTLE STUDY OF LIGHT &amp; LENSES</span>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">FIELD NOTE 01 / DEPTH OF FIELD</p>
+          <h1 id="page-title">초점의 앞과 뒤</h1>
+          <p class="intro-copy">한 장의 사진에서 어디까지 선명하게 보일까요?<br>카메라 설정을 바꾸며 피사계 심도의 변화를 살펴보세요.</p>
+        </div>
+        <span class="draft-tag">INTERACTIVE DRAFT &nbsp; / &nbsp; 01</span>
+      </section>
+
+      <div class="workspace">
+        <section class="card graph-card" aria-labelledby="graph-title">
+          <div class="card-heading">
+            <div>
+              <p class="card-index">01 / THE GRAPH</p>
+              <h2 id="graph-title">선명한 거리의 범위</h2>
+              <p class="card-description">초점면을 기준으로 허용 혼란원 안에 드는 구간입니다.</p>
+            </div>
+            <span class="live-badge">실시간 계산</span>
+          </div>
+
+          <div class="readouts" aria-label="계산 결과" aria-live="polite">
+            <div class="readout readout-primary">
+              <span class="readout-label">피사계 심도</span>
+              <span class="readout-value"><span id="depth-value">—</span> <span class="readout-unit" id="depth-unit"></span></span>
+            </div>
+            <div class="readout">
+              <span class="readout-label">가까운 경계</span>
+              <span class="readout-value" id="near-value">—</span>
+            </div>
+            <div class="readout">
+              <span class="readout-label">먼 경계</span>
+              <span class="readout-value" id="far-value">—</span>
+            </div>
+          </div>
+
+          <div class="plot-frame">
+            <div class="plot-heading"><span>혼란원 지름 (mm)</span><span>낮을수록 선명</span></div>
+            <svg id="chart" role="img" aria-labelledby="chart-title chart-description"></svg>
+            <p class="axis-caption">카메라로부터의 거리 (m)</p>
+          </div>
+
+          <div class="legend" aria-label="그래프 범례">
+            <span class="legend-item"><span class="legend-line" aria-hidden="true"></span>혼란원 지름</span>
+            <span class="legend-item"><span class="legend-threshold" aria-hidden="true"></span><span id="threshold-label">허용 기준</span></span>
+            <span class="legend-item"><span class="legend-zone" aria-hidden="true"></span>선명한 구간</span>
+          </div>
+          <p class="graph-note">
+            곡선이 <strong>점선 이하</strong>에 있는 거리가 허용 기준 이내입니다.
+            <span class="range-note" id="range-note"></span>
+          </p>
+          <noscript>그래프를 보려면 브라우저에서 JavaScript를 사용 설정해 주세요.</noscript>
+        </section>
+
+        <aside class="card control-card" aria-labelledby="controls-title">
+          <form id="controls-form">
+            <div class="card-heading">
+              <div>
+                <p class="card-index">02 / CAMERA SETTINGS</p>
+                <h2 id="controls-title">카메라 설정</h2>
+                <p class="card-description">설정을 움직여 그래프를 바꿔보세요.</p>
+              </div>
+              <button class="reset" type="reset">초기화</button>
+            </div>
+
+            <div class="controls">
+              <div class="control">
+                <div class="control-header">
+                  <label class="control-name" for="focal-length"><span class="control-number">01</span>렌즈 초점거리</label>
+                  <output class="control-value" id="focal-output" for="focal-length">50 mm</output>
+                </div>
+                <input id="focal-length" type="range" min="24" max="135" step="1" value="50">
+                <div class="range-labels" aria-hidden="true"><span>24 mm</span><span>135 mm</span></div>
+              </div>
+
+              <div class="control">
+                <div class="control-header">
+                  <label class="control-name" for="aperture"><span class="control-number">02</span>조리개</label>
+                  <output class="control-value" id="aperture-output" for="aperture">f/2.8</output>
+                </div>
+                <input id="aperture" type="range" min="0" max="9" step="1" value="3" aria-valuetext="f/2.8">
+                <div class="range-labels" aria-hidden="true"><span>f/1.4 &nbsp; 더 개방</span><span>f/22 &nbsp; 더 조임</span></div>
+              </div>
+
+              <div class="control">
+                <div class="control-header">
+                  <label class="control-name" for="focus-distance"><span class="control-number">03</span>초점 맞춘 거리</label>
+                  <output class="control-value" id="focus-output" for="focus-distance">3.0 m</output>
+                </div>
+                <input id="focus-distance" type="range" min="0.5" max="20" step="0.1" value="3">
+                <div class="range-labels" aria-hidden="true"><span>0.5 m</span><span>20 m</span></div>
+              </div>
+
+              <div class="control">
+                <div class="control-header">
+                  <label class="control-name" for="sensor"><span class="control-number">04</span>센서 기준</label>
+                </div>
+                <select id="sensor" aria-describedby="sensor-help">
+                  <option value="0.03">풀프레임 · 0.030 mm</option>
+                  <option value="0.02">APS-C · 0.020 mm</option>
+                  <option value="0.015">마이크로 포서드 · 0.015 mm</option>
+                </select>
+                <p class="control-help" id="sensor-help">센서별로 흔히 사용하는 허용 혼란원 근사값</p>
+              </div>
+            </div>
+
+            <div class="tip">
+              <p class="tip-title">살펴보기</p>
+              <p>조리개를 조이면 일반적으로 선명한 범위가 넓어지고, 피사체에 가까이 다가가면 좁아집니다.</p>
+            </div>
+          </form>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>얇은 렌즈 모델을 사용한 근사치입니다. 실제 선명도는 렌즈, 출력 크기, 감상 거리 등에 따라 달라집니다.</p>
+      <p class="footer-mark">FOCUS NOTES &nbsp; / &nbsp; 01</p>
+    </footer>
+  </div>
+
+  <script>
+    "use strict";
+
+    const apertureValues = [1.4, 1.8, 2, 2.8, 4, 5.6, 8, 11, 16, 22];
+    const form = document.getElementById("controls-form");
+    const focalInput = document.getElementById("focal-length");
+    const apertureInput = document.getElementById("aperture");
+    const focusInput = document.getElementById("focus-distance");
+    const sensorInput = document.getElementById("sensor");
+    const chart = document.getElementById("chart");
+
+    function calculateDepthOfField(focalLength, aperture, focusDistance, circleOfConfusion) {
+      const focusMm = focusDistance * 1000;
+      const focalSquared = focalLength * focalLength;
+      const tolerance = aperture * circleOfConfusion * (focusMm - focalLength);
+      const near = focalSquared * focusMm / (focalSquared + tolerance) / 1000;
+      const far = tolerance >= focalSquared
+        ? Infinity
+        : focalSquared * focusMm / (focalSquared - tolerance) / 1000;
+      return { near, far, depth: far - near };
+    }
+
+    function blurDiameter(distance, settings) {
+      const distanceMm = distance * 1000;
+      const focusMm = settings.focus * 1000;
+      return settings.focal ** 2 * Math.abs(focusMm - distanceMm)
+        / (settings.aperture * distanceMm * (focusMm - settings.focal));
+    }
+
+    function formatNumber(value, digits) {
+      return new Intl.NumberFormat("ko-KR", {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      }).format(value);
+    }
+
+    function formatDepth(depth) {
+      if (!Number.isFinite(depth)) return { value: "∞", unit: "" };
+      if (depth < 0.01) {
+        const millimeters = depth * 1000;
+        return { value: formatNumber(millimeters, millimeters < 1 ? 2 : 1), unit: "mm" };
+      }
+      if (depth < 1) return { value: formatNumber(depth * 100, depth < 0.1 ? 2 : 1), unit: "cm" };
+      return { value: formatNumber(depth, 2), unit: "m" };
+    }
+
+    function formatBoundary(value, depth) {
+      if (!Number.isFinite(value)) return "∞";
+      const digits = depth < 0.01 ? 4 : depth < 0.1 ? 3 : 2;
+      return `${formatNumber(value, digits)} m`;
+    }
+
+    function formatCircle(value) {
+      return value.toFixed(3).replace(/\.?0+$/, "");
+    }
+
+    function readSettings() {
+      return {
+        focal: Number(focalInput.value),
+        aperture: apertureValues[Number(apertureInput.value)],
+        focus: Number(focusInput.value),
+        circle: Number(sensorInput.value)
+      };
+    }
+
+    function setRangeProgress(input) {
+      const percent = (Number(input.value) - Number(input.min)) / (Number(input.max) - Number(input.min)) * 100;
+      input.style.setProperty("--progress", `${percent}%`);
+    }
+
+    function drawChart(settings, result) {
+      const width = Math.max(280, chart.clientWidth || 640);
+      const height = chart.clientHeight || 310;
+      const margin = { top: 16, right: 12, bottom: 34, left: 52 };
+      const left = margin.left;
+      const right = width - margin.right;
+      const top = margin.top;
+      const bottom = height - margin.bottom;
+      const plotWidth = right - left;
+      const plotHeight = bottom - top;
+      const nearGap = settings.focus - result.near;
+      const minDistance = Math.max(settings.focal / 1000 + 0.000001, settings.focus - 2 * nearGap);
+      const maxDistance = Number.isFinite(result.far)
+        ? Math.min(settings.focus + 2 * (result.far - settings.focus), settings.focus + 6 * nearGap)
+        : settings.focus + 6 * nearGap;
+      const maxBlur = settings.circle * 3;
+      const x = value => left + (value - minDistance) / (maxDistance - minDistance) * plotWidth;
+      const y = value => bottom - value / maxBlur * plotHeight;
+      const tickCount = width < 440 ? 3 : 5;
+      const tickStep = (maxDistance - minDistance) / tickCount;
+      const tickDigits = Math.max(0, Math.min(5, Math.max(
+        Math.ceil(-Math.log10(tickStep)) + 1,
+        Math.ceil(-Math.log10(minDistance))
+      )));
+      const nearX = Math.max(left, x(result.near));
+      const farX = Number.isFinite(result.far) ? Math.min(right, x(result.far)) : right;
+      const focusX = x(settings.focus);
+      const labelWidth = 105;
+      const labelX = Math.max(left, Math.min(right - labelWidth, focusX - labelWidth / 2));
+      const distances = Array.from({ length: 241 }, (_, index) =>
+        minDistance + (maxDistance - minDistance) * index / 240
+      );
+      [result.near, settings.focus, result.far].forEach(value => {
+        if (Number.isFinite(value) && value >= minDistance && value <= maxDistance) distances.push(value);
+      });
+      distances.sort((a, b) => a - b);
+      const curve = distances.map((distance, index) =>
+        `${index === 0 ? "M" : "L"}${x(distance).toFixed(2)} ${y(blurDiameter(distance, settings)).toFixed(2)}`
+      ).join(" ");
+
+      let grid = "";
+      for (let index = 0; index <= 3; index += 1) {
+        const value = settings.circle * index;
+        const position = y(value);
+        grid += `<line class="chart-grid" x1="${left}" y1="${position}" x2="${right}" y2="${position}"/>`;
+        grid += `<text class="chart-tick" x="${left - 9}" y="${position + 4}" text-anchor="end">${formatCircle(value)}</text>`;
+      }
+      for (let index = 0; index <= tickCount; index += 1) {
+        const distance = minDistance + tickStep * index;
+        const position = x(distance);
+        const anchor = index === 0 ? "start" : index === tickCount ? "end" : "middle";
+        grid += `<line class="chart-grid" x1="${position}" y1="${top}" x2="${position}" y2="${bottom}"/>`;
+        grid += `<text class="chart-tick chart-distance-tick" x="${position}" y="${bottom + 21}" text-anchor="${anchor}">${formatNumber(distance, tickDigits)}</text>`;
+      }
+
+      const farDescription = Number.isFinite(result.far)
+        ? `${formatBoundary(result.far, result.depth)}`
+        : "무한대";
+      const depthDescription = formatDepth(result.depth);
+      chart.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      chart.innerHTML = `
+        <title id="chart-title">거리별 혼란원 지름과 피사계 심도</title>
+        <desc id="chart-description">초점 거리 ${formatNumber(settings.focus, 1)} m에서 허용 기준은 ${settings.circle} mm입니다.
+          선명한 구간은 ${formatBoundary(result.near, result.depth)}부터 ${farDescription}까지이며,
+          피사계 심도는 ${depthDescription.value} ${depthDescription.unit}입니다. 허용 기준의 세 배를 넘는 값은 표시 영역 밖입니다.</desc>
+        <defs><clipPath id="plot-clip"><rect x="${left}" y="${top}" width="${plotWidth}" height="${plotHeight}"/></clipPath></defs>
+        ${grid}
+        <g clip-path="url(#plot-clip)">
+          <rect class="chart-zone" x="${nearX}" y="${top}" width="${Math.max(0, farX - nearX)}" height="${plotHeight}"/>
+          <line class="chart-boundary" x1="${nearX}" y1="${top}" x2="${nearX}" y2="${bottom}"/>
+          ${Number.isFinite(result.far) && result.far <= maxDistance
+            ? `<line class="chart-boundary" x1="${farX}" y1="${top}" x2="${farX}" y2="${bottom}"/>`
+            : ""}
+          <line class="chart-threshold" x1="${left}" y1="${y(settings.circle)}" x2="${right}" y2="${y(settings.circle)}"/>
+          <line class="chart-focus" x1="${focusX}" y1="${top}" x2="${focusX}" y2="${bottom}"/>
+          <path class="chart-curve" d="${curve}"/>
+          <circle cx="${focusX}" cy="${bottom}" r="4" fill="#c5e8c1"/>
+        </g>
+        <rect x="${labelX}" y="${top + 8}" width="${labelWidth}" height="23" rx="4" fill="#293d31"/>
+        <text class="chart-focus-label" x="${labelX + labelWidth / 2}" y="${top + 23}" text-anchor="middle">초점 ${formatNumber(settings.focus, 1)} m</text>
+      `;
+
+      let rangeMessage = "가로 범위는 설정에 맞춰 자동 조정되며, 허용 기준의 3배를 넘는 값은 상단에서 잘립니다.";
+      if (!Number.isFinite(result.far)) {
+        rangeMessage = `먼 경계는 무한대까지 이어집니다. ${rangeMessage}`;
+      } else if (result.far > maxDistance) {
+        rangeMessage = `먼 경계는 표시 범위 밖에 있습니다. ${rangeMessage}`;
+      }
+      document.getElementById("range-note").textContent = rangeMessage;
+    }
+
+    function render() {
+      const settings = readSettings();
+      const result = calculateDepthOfField(settings.focal, settings.aperture, settings.focus, settings.circle);
+      const depth = formatDepth(result.depth);
+
+      document.getElementById("focal-output").textContent = `${settings.focal} mm`;
+      document.getElementById("aperture-output").textContent = `f/${settings.aperture}`;
+      document.getElementById("focus-output").textContent = `${formatNumber(settings.focus, 1)} m`;
+      apertureInput.setAttribute("aria-valuetext", `f/${settings.aperture}`);
+      document.getElementById("depth-value").textContent = depth.value;
+      document.getElementById("depth-unit").textContent = depth.unit;
+      document.getElementById("near-value").textContent = formatBoundary(result.near, result.depth);
+      document.getElementById("far-value").textContent = formatBoundary(result.far, result.depth);
+      document.getElementById("threshold-label").textContent = `허용 기준 (${settings.circle.toFixed(3)} mm)`;
+      [focalInput, apertureInput, focusInput].forEach(setRangeProgress);
+      drawChart(settings, result);
+    }
+
+    form.addEventListener("input", render);
+    form.addEventListener("reset", () => requestAnimationFrame(render));
+    window.addEventListener("resize", render);
+    render();
+  </script>
+</body>
+</html>
