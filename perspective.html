@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>멀어질수록 가까워지는 배경 | 원근 압축 시각화</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <circle cx="16" cy="16" r="13.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M12.1 3.2 19.7 16h9M28.7 12.1 15.9 19.7l-4.5 7.8M19.9 28.7 12.3 15.9H3.2M3.3 19.9 16.1 12.3l4.5-7.8" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        </svg>
+        <span>FOCUS NOTES</span>
+      </div>
+      <nav class="note-nav" aria-label="노트 목록">
+        <a href="index.html"><span class="note-nav-number">01</span>피사계 심도</a>
+        <a href="exposure.html"><span class="note-nav-number">02</span>노출 삼각형</a>
+        <a href="field-of-view.html"><span class="note-nav-number">03</span>화각과 센서</a>
+        <a href="perspective.html" aria-current="page"><span class="note-nav-number">04</span>원근 압축</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">FIELD NOTE 04 / PERSPECTIVE</p>
+          <h1 id="page-title">멀어질수록 가까워지는 배경</h1>
+          <p class="intro-copy">망원 렌즈로 찍으면 배경이 피사체 가까이에 있는 것처럼 보이곤 합니다.<br>카메라 위치와 구도를 바꾸며 그 이유를 살펴보세요.</p>
+        </div>
+        <span class="draft-tag">INTERACTIVE DRAFT &nbsp; / &nbsp; 04</span>
+      </section>
+
+      <div class="workspace">
+        <section class="card graph-card" aria-labelledby="comparison-title">
+          <div class="card-heading">
+            <div>
+              <p class="card-index">01 / THE COMPARISON</p>
+              <h2 id="comparison-title">피사체와 배경의 관계</h2>
+              <p class="card-description">같은 장면을 24 mm 기준 사진과 비교합니다.</p>
+            </div>
+            <span class="live-badge">실시간 계산</span>
+          </div>
+
+          <div class="readouts" aria-label="계산 결과" aria-live="polite">
+            <div class="readout readout-primary">
+              <span class="readout-label">배경/피사체 비율 변화</span>
+              <span class="readout-value" id="ratio-value">—</span>
+            </div>
+            <div class="readout">
+              <span class="readout-label">기준 카메라 거리</span>
+              <span class="readout-value" id="reference-distance">—</span>
+            </div>
+            <div class="readout">
+              <span class="readout-label">선택 카메라 거리</span>
+              <span class="readout-value" id="current-distance">—</span>
+            </div>
+            <div class="readout">
+              <span class="readout-label">피사체 뒤 배경 거리</span>
+              <span class="readout-value" id="background-value">—</span>
+            </div>
+          </div>
+
+          <div class="comparison-frames">
+            <div class="comparison-card">
+              <div class="comparison-heading">
+                <h3>기준 · 24 mm</h3>
+                <span id="reference-angle"></span>
+              </div>
+              <svg class="perspective-scene" id="reference-scene" viewBox="0 0 360 240" role="img"></svg>
+              <p class="comparison-meta" id="reference-meta"></p>
+            </div>
+            <div class="comparison-card">
+              <div class="comparison-heading">
+                <h3>선택 · <strong id="current-focal">85 mm</strong></h3>
+                <span id="current-angle"></span>
+              </div>
+              <svg class="perspective-scene" id="current-scene" viewBox="0 0 360 240" role="img"></svg>
+              <p class="comparison-meta" id="current-meta"></p>
+            </div>
+          </div>
+
+          <div class="coverage" aria-live="polite">
+            <span>기준 사진 대비 배경/피사체 크기 비율</span>
+            <strong id="ratio-summary">—</strong>
+          </div>
+          <p class="graph-note" id="comparison-note"></p>
+          <p class="graph-note">
+            두 사진에서 피사체와 배경 집의 <strong>실제 크기와 위치는 같습니다.</strong>
+            <span class="range-note">풀프레임 36 × 24 mm, 피사체 높이 1.7 m, 배경 집 높이 2.6 m 기준입니다. 투영 높이는 사진 밖에 잘린 부분도 포함합니다.</span>
+          </p>
+          <noscript>계산과 비교 화면을 보려면 브라우저에서 JavaScript를 사용 설정해 주세요.</noscript>
+        </section>
+
+        <aside class="card control-card" aria-labelledby="controls-title">
+          <form id="controls-form">
+            <div class="card-heading">
+              <div>
+                <p class="card-index">02 / CAMERA SETTINGS</p>
+                <h2 id="controls-title">촬영 설정</h2>
+                <p class="card-description">비교 방식과 거리를 바꾸어 보세요.</p>
+              </div>
+              <button class="reset" type="reset">초기화</button>
+            </div>
+
+            <div class="controls">
+              <fieldset class="control compare-mode" aria-describedby="mode-help">
+                <legend class="control-name"><span class="control-number">01</span>비교 방식</legend>
+                <div class="compare-options">
+                  <label><input type="radio" name="mode" value="framing" checked><span>같은 구도</span></label>
+                  <label><input type="radio" name="mode" value="position"><span>같은 위치</span></label>
+                </div>
+                <p class="control-help" id="mode-help"></p>
+              </fieldset>
+              <div class="control">
+                <div class="control-header">
+                  <label class="control-name" for="focal-length"><span class="control-number">02</span>선택한 렌즈 초점거리</label>
+                  <output class="control-value" id="focal-output" for="focal-length">85 mm</output>
+                </div>
+                <input id="focal-length" type="range" min="24" max="200" step="1" value="85">
+                <div class="range-labels" aria-hidden="true"><span>24 mm</span><span>200 mm</span></div>
+              </div>
+              <div class="control">
+                <div class="control-header">
+                  <label class="control-name" for="background-distance"><span class="control-number">03</span>피사체 뒤 배경 거리</label>
+                  <output class="control-value" id="background-output" for="background-distance">8.0 m</output>
+                </div>
+                <input id="background-distance" type="range" min="1" max="20" step="0.5" value="8">
+                <div class="range-labels" aria-hidden="true"><span>1 m</span><span>20 m</span></div>
+                <p class="control-help">피사체와 배경 사이의 실제 거리를 양쪽 사진에 똑같이 적용합니다.</p>
+              </div>
+            </div>
+
+            <section class="tip" aria-roledescription="carousel" aria-labelledby="tip-heading">
+              <div class="tip-header">
+                <p class="tip-title" id="tip-heading">살펴보기 <span class="tip-counter" id="tip-counter" aria-live="polite"></span></p>
+                <div class="tip-nav" role="group" aria-label="살펴보기 넘기기">
+                  <button class="tip-button" type="button" id="tip-prev" aria-label="이전 내용">&#8249;</button>
+                  <button class="tip-button" type="button" id="tip-next" aria-label="다음 내용">&#8250;</button>
+                </div>
+              </div>
+              <div aria-live="polite">
+                <div class="tip-slide" data-tip><p class="tip-subtitle">원근 압축이란</p><p class="tip-body">먼 곳에서 찍으면 피사체와 배경까지의 거리 비율이 작아져 배경이 피사체에 비해 크게 보입니다. 실제 거리가 줄어드는 것은 아닙니다.</p></div>
+                <div class="tip-slide" data-tip hidden><p class="tip-subtitle">원근을 바꾸는 것은 위치</p><p class="tip-body">같은 자리에서 초점거리만 바꾸면 피사체와 배경이 함께 확대되므로 원근 관계는 같습니다. 망원 렌즈 자체가 공간을 압축하지는 않습니다.</p></div>
+                <div class="tip-slide" data-tip hidden><p class="tip-subtitle">같은 구도를 유지하면</p><p class="tip-body">긴 렌즈로 피사체를 같은 크기로 담으려면 뒤로 이동해야 합니다. 이때 달라진 촬영 위치가 배경을 더 크게 보이게 만듭니다.</p></div>
+                <div class="tip-slide" data-tip hidden><p class="tip-subtitle">배경까지의 거리</p><p class="tip-body">피사체와 배경이 멀리 떨어져 있을수록 촬영 위치에 따른 크기 비율 변화를 비교하기 쉽습니다.</p></div>
+              </div>
+            </section>
+          </form>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>왜곡 없는 핀홀 투영을 가정한 비교입니다. 카메라는 피사체의 중앙을 바라보며 배경은 피사체 바로 뒤의 평면에 있습니다.</p>
+      <p class="footer-mark">FOCUS NOTES &nbsp; / &nbsp; 04</p>
+    </footer>
+  </div>
+
+  <script src="geometry.js"></script>
+  <script>
+    "use strict";
+
+    const form = document.getElementById("controls-form");
+    const focalInput = document.getElementById("focal-length");
+    const backgroundInput = document.getElementById("background-distance");
+    const element = id => document.getElementById(id);
+
+    function drawScene(svg, frame, focalLength, cropRatio = 1) {
+      const { subjectHeight, backgroundHeight } = Optics.perspectiveReference;
+      const subjectScale = 240 * frame.subjectFraction / subjectHeight;
+      const backgroundScale = 240 * frame.backgroundFraction / backgroundHeight;
+      const subjectBase = 120 + subjectHeight / 2 * subjectScale;
+      const backgroundBase = 120 + subjectHeight / 2 * backgroundScale;
+
+      const cropDescription = cropRatio < 1 ? " 점선은 선택 렌즈가 담는 영역입니다." : "";
+      svg.setAttribute("aria-label", `${focalLength} mm, 카메라 거리 ${formatNumber(frame.distance, 2)} m. 피사체의 투영 높이는 화면 높이의 ${formatNumber(frame.subjectFraction * 100, 1)}%, 배경 집은 ${formatNumber(frame.backgroundFraction * 100, 1)}%입니다.${cropDescription}`);
+      svg.innerHTML = `
+        <rect width="360" height="240" fill="#9db5ae"/>
+        <rect y="120" width="360" height="120" fill="#8da186"/>
+        <line x1="0" y1="120" x2="360" y2="120" stroke="#718a79"/>
+        <g class="background-objects" transform="translate(180 ${backgroundBase}) scale(${backgroundScale})">
+          <path d="M-5 0 H5" stroke="#718c73" stroke-width=".08"/>
+          <g transform="translate(-1.85 0)">
+            <rect x="-.55" y="-2.2" width="1.1" height="2.2" fill="#c5926f"/>
+            <path d="M-.64 -2.2 L0 -2.6 L.64 -2.2 Z" fill="#765951"/>
+            <rect x="-.15" y="-.72" width=".3" height=".72" fill="#59675c"/>
+            <rect x="-.4" y="-1.7" width=".25" height=".27" fill="#ead7a6"/>
+            <rect x=".15" y="-1.7" width=".25" height=".27" fill="#ead7a6"/>
+          </g>
+          <g transform="translate(1.8 0)">
+            <rect x="-.07" y="-1.45" width=".14" height="1.45" fill="#56634d"/>
+            <circle cx="0" cy="-1.75" r=".65" fill="#4a6d55"/>
+            <circle cx="-.3" cy="-1.65" r=".4" fill="#54795c"/>
+          </g>
+        </g>
+        <g class="subject" transform="translate(180 ${subjectBase}) scale(${subjectScale})">
+          <ellipse cx="0" cy="0" rx=".28" ry=".045" fill="#5c765c" opacity=".6"/>
+          <path d="M-.11 -.58 L-.15 -.04 M.11 -.58 L.15 -.04" fill="none" stroke="#263b32" stroke-width=".13" stroke-linecap="round"/>
+          <path d="M-.17 -1.27 Q-.27 -1.2 -.29 -.75 L-.2 -.7 L-.16 -.95 L-.14 -.55 H.14 L.16 -.95 L.2 -.7 L.29 -.75 Q.27 -1.2 .17 -1.27 Z" fill="#dfc285"/>
+          <circle cx="0" cy="-1.52" r=".18" fill="#d4ab8d"/>
+          <path d="M-.17 -1.56 Q-.13 -1.75 0 -1.7 Q.14 -1.72 .17 -1.56 Z" fill="#354941"/>
+        </g>
+        ${cropRatio < 1
+          ? `<rect class="crop-guide" x="${180 - 180 * cropRatio}" y="${120 - 120 * cropRatio}" width="${360 * cropRatio}" height="${240 * cropRatio}" fill="none" stroke="#e9c987" stroke-width="2" stroke-dasharray="6 4"/>`
+          : ""}`;
+    }
+
+    function frameMeta(frame) {
+      return `카메라 거리 ${formatNumber(frame.distance, 2)} m · 피사체 ${formatNumber(frame.subjectFraction * 100, 1)}% · 배경 집 ${formatNumber(frame.backgroundFraction * 100, 1)}%`;
+    }
+
+    function render() {
+      const focalLength = Number(focalInput.value);
+      const backgroundDistance = Number(backgroundInput.value);
+      const keepFraming = form.elements.mode.value === "framing";
+      const result = Optics.perspective(focalLength, backgroundDistance, keepFraming);
+      const referenceFocal = Optics.perspectiveReference.focal;
+      const ratio = `${formatNumber(result.relativeSize, 2)}×`;
+
+      element("focal-output").textContent = `${focalLength} mm`;
+      element("background-output").textContent = `${formatNumber(backgroundDistance, 1)} m`;
+      focalInput.setAttribute("aria-valuetext", `${focalLength} mm`);
+      backgroundInput.setAttribute("aria-valuetext", `${formatNumber(backgroundDistance, 1)} m`);
+      [focalInput, backgroundInput].forEach(setRangeProgress);
+
+      element("ratio-value").textContent = ratio;
+      element("ratio-summary").textContent = ratio;
+      element("reference-distance").textContent = `${formatNumber(result.reference.distance, 2)} m`;
+      element("current-distance").textContent = `${formatNumber(result.current.distance, 2)} m`;
+      element("background-value").textContent = `${formatNumber(backgroundDistance, 1)} m`;
+      element("current-focal").textContent = `${focalLength} mm`;
+      element("reference-angle").textContent = `가로 화각 ${formatNumber(Optics.angleOfView(Optics.fullFrame.width, referenceFocal), 1)}°`;
+      element("current-angle").textContent = `가로 화각 ${formatNumber(Optics.angleOfView(Optics.fullFrame.width, focalLength), 1)}°`;
+      element("reference-meta").textContent = frameMeta(result.reference);
+      element("current-meta").textContent = frameMeta(result.current);
+      element("mode-help").textContent = keepFraming
+        ? "피사체의 크기를 같게 유지하도록 카메라를 앞뒤로 이동합니다."
+        : "카메라 위치를 고정하고 초점거리만 바꿉니다.";
+      element("comparison-note").textContent = keepFraming
+        ? "두 사진의 피사체는 화면 높이의 55%로 같습니다. 멀리서 촬영할수록 같은 배경이 피사체에 비해 크게 보입니다."
+        : focalLength === referenceFocal
+          ? "카메라 위치와 초점거리가 같아 두 사진이 같습니다."
+          : "카메라 위치가 같아 배경과 피사체의 크기 비율은 변하지 않습니다. 기준 사진의 점선은 선택한 렌즈로 담기는 범위입니다.";
+
+      drawScene(element("reference-scene"), result.reference, referenceFocal,
+        keepFraming ? 1 : referenceFocal / focalLength);
+      drawScene(element("current-scene"), result.current, focalLength);
+    }
+
+    setupTips();
+    form.addEventListener("input", render);
+    form.addEventListener("reset", () => requestAnimationFrame(render));
+    render();
+  </script>
+</body>
+</html>

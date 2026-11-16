@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>프레임의 크기 | 화각과 센서 시각화</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <circle cx="16" cy="16" r="13.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M12.1 3.2 19.7 16h9M28.7 12.1 15.9 19.7l-4.5 7.8M19.9 28.7 12.3 15.9H3.2M3.3 19.9 16.1 12.3l4.5-7.8" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        </svg>
+        <span>FOCUS NOTES</span>
+      </div>
+      <nav class="note-nav" aria-label="노트 목록">
+        <a href="index.html"><span class="note-nav-number">01</span>피사계 심도</a>
+        <a href="exposure.html"><span class="note-nav-number">02</span>노출 삼각형</a>
+        <a href="field-of-view.html" aria-current="page"><span class="note-nav-number">03</span>화각과 센서</a>
+        <a href="perspective.html"><span class="note-nav-number">04</span>원근 압축</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">FIELD NOTE 03 / FIELD OF VIEW</p>
+          <h1 id="page-title">프레임의 크기</h1>
+          <p class="intro-copy">같은 렌즈를 써도 센서 크기에 따라 담기는 장면이 달라집니다.<br>화각과 촬영 범위가 어떻게 바뀌는지 살펴보세요.</p>
+        </div>
+        <span class="draft-tag">INTERACTIVE DRAFT &nbsp; / &nbsp; 03</span>
+      </section>
+
+      <div class="workspace">
+        <section class="card graph-card" aria-labelledby="graph-title">
+          <div class="card-heading">
+            <div>
+              <p class="card-index">01 / THE FRAME</p>
+              <h2 id="graph-title">렌즈가 담는 범위</h2>
+              <p class="card-description">같은 위치와 초점거리에서 선택한 센서와 풀프레임을 비교합니다.</p>
+            </div>
+            <span class="live-badge">실시간 계산</span>
+          </div>
+
+          <div class="readouts" aria-label="계산 결과" aria-live="polite">
+            <div class="readout readout-primary">
+              <span class="readout-label">가로 화각</span>
+              <span class="readout-value" id="horizontal-value">—</span>
+            </div>
+            <div class="readout">
+              <span class="readout-label">세로 화각</span>
+              <span class="readout-value" id="vertical-value">—</span>
+            </div>
+            <div class="readout">
+              <span class="readout-label">대각선 화각</span>
+              <span class="readout-value" id="diagonal-value">—</span>
+            </div>
+            <div class="readout">
+              <span class="readout-label">35 mm 환산 초점거리</span>
+              <span class="readout-value" id="equivalent-value">—</span>
+            </div>
+          </div>
+
+          <div class="geometry-grid">
+            <div class="geometry-panel">
+              <div class="geometry-heading"><h3>수평 시야</h3><span>카메라를 위에서 본 모습</span></div>
+              <svg class="geometry-svg" id="angle-diagram" viewBox="0 0 540 320" role="img" aria-labelledby="angle-title angle-description">
+                <title id="angle-title">센서별 수평 화각 비교</title>
+                <desc id="angle-description"></desc>
+                <path d="M50 280 A220 220 0 0 1 490 280" fill="none" stroke="#30403a"/>
+                <path d="M120 280 A150 150 0 0 1 420 280" fill="none" stroke="#263630"/>
+                <line x1="270" y1="60" x2="270" y2="280" stroke="#52675a" stroke-dasharray="3 5"/>
+                <path id="angle-selected" fill="#91c897" fill-opacity=".18" stroke="#b7dfb3" stroke-width="2"/>
+                <path id="angle-reference" fill="none" stroke="#e9c987" stroke-width="1.5" stroke-dasharray="6 5"/>
+                <rect x="258" y="280" width="24" height="14" rx="3" fill="#c5e8c1"/>
+                <circle cx="270" cy="287" r="4" fill="#263b2c"/>
+                <text x="270" y="312" text-anchor="middle" fill="#9bab9f" font-size="12">카메라</text>
+              </svg>
+              <p class="geometry-caption">두 선 사이의 각도가 가로 화각입니다.</p>
+            </div>
+
+            <div class="geometry-panel">
+              <div class="geometry-heading"><h3>센서가 기록하는 영역</h3><span>동일 렌즈의 이미지 기준</span></div>
+              <svg class="geometry-svg" id="sensor-diagram" viewBox="0 0 360 260" role="img" aria-labelledby="sensor-title sensor-description">
+                <title id="sensor-title">풀프레임 대비 센서 영역</title>
+                <desc id="sensor-description"></desc>
+                <defs><clipPath id="sensor-window"><rect x="18" y="16" width="324" height="216"/></clipPath></defs>
+                <g clip-path="url(#sensor-window)">
+                  <g id="sensor-projection">
+                    <rect x="-5000" y="-5000" width="10000" height="10000" fill="#819a94"/>
+                    <circle cx="278" cy="58" r="19" fill="#e5ce99"/>
+                    <path d="M-5000 149 H18 L91 86 L154 144 L222 74 L342 153 H5000 V5000 H-5000 Z" fill="#5a7867"/>
+                    <path d="M-5000 174 H18 Q92 132 154 172 Q235 128 342 168 H5000 V5000 H-5000 Z" fill="#405e4e"/>
+                    <rect x="135" y="132" width="91" height="73" fill="#c29572"/>
+                    <path d="M125 134 L180 91 L236 134 Z" fill="#6d5149"/>
+                    <rect x="171" y="169" width="19" height="36" fill="#54645b"/>
+                    <rect x="145" y="148" width="15" height="14" fill="#ead7a6"/>
+                    <rect x="200" y="148" width="15" height="14" fill="#ead7a6"/>
+                    <path d="M-5000 207 H18 Q119 191 180 216 Q255 192 342 204 H5000 V5000 H-5000 Z" fill="#728b68"/>
+                  </g>
+                  <path id="sensor-outside" fill="#101a19" fill-opacity=".72" fill-rule="evenodd"/>
+                </g>
+                <rect id="sensor-selected" fill="none" stroke="#b7dfb3" stroke-width="3"/>
+                <rect x="18" y="16" width="324" height="216" fill="none" stroke="#e9c987" stroke-width="1.5" stroke-dasharray="6 5"/>
+              </svg>
+              <p class="geometry-caption"><span id="sensor-caption"></span><br>같은 위치에서 바라본 예시 장면입니다.</p>
+            </div>
+          </div>
+
+          <div class="legend geometry-legend" aria-label="비교 범례">
+            <span class="legend-item"><span class="legend-selected" aria-hidden="true"></span>선택한 센서</span>
+            <span class="legend-item"><span class="legend-reference" aria-hidden="true"></span>풀프레임 기준</span>
+          </div>
+          <div class="coverage" aria-live="polite">
+            <span id="coverage-label">촬영 범위</span>
+            <strong id="coverage-value">—</strong>
+          </div>
+          <p class="graph-note">
+            표시 범위는 카메라 정면의 해당 거리에서 <strong>가로 × 세로</strong>로 담기는 크기입니다.
+            <span class="range-note">환산 초점거리는 대각선 화각 기준입니다. 화면비가 다르면 가로·세로 화각은 같지 않을 수 있습니다.</span>
+          </p>
+          <noscript>계산과 시각화를 보려면 브라우저에서 JavaScript를 사용 설정해 주세요.</noscript>
+        </section>
+
+        <aside class="card control-card" aria-labelledby="controls-title">
+          <form id="controls-form">
+            <div class="card-heading">
+              <div>
+                <p class="card-index">02 / CAMERA SETTINGS</p>
+                <h2 id="controls-title">카메라 설정</h2>
+                <p class="card-description">렌즈, 센서와 거리를 바꾸어 비교해 보세요.</p>
+              </div>
+              <button class="reset" type="reset">초기화</button>
+            </div>
+
+            <div class="controls">
+              <div class="control">
+                <div class="control-header">
+                  <label class="control-name" for="focal-length"><span class="control-number">01</span>렌즈 초점거리</label>
+                  <output class="control-value" id="focal-output" for="focal-length">50 mm</output>
+                </div>
+                <input id="focal-length" type="range" min="14" max="200" step="1" value="50">
+                <div class="range-labels" aria-hidden="true"><span>14 mm &nbsp; 넓게</span><span>200 mm &nbsp; 좁게</span></div>
+              </div>
+              <div class="control">
+                <div class="control-header">
+                  <label class="control-name" for="sensor"><span class="control-number">02</span>센서 크기</label>
+                </div>
+                <select id="sensor" aria-describedby="sensor-help">
+                  <option value="full">풀프레임 · 36 × 24 mm</option>
+                  <option value="aps" selected>APS-C · 23.6 × 15.7 mm</option>
+                  <option value="mft">마이크로 포서드 · 17.3 × 13 mm</option>
+                </select>
+                <p class="control-help" id="sensor-help">대표적인 센서 크기입니다. 실제 크기는 카메라마다 다를 수 있습니다.</p>
+              </div>
+              <div class="control">
+                <div class="control-header">
+                  <label class="control-name" for="distance"><span class="control-number">03</span>촬영 범위 기준 거리</label>
+                  <output class="control-value" id="distance-output" for="distance">5.0 m</output>
+                </div>
+                <input id="distance" type="range" min="1" max="50" step="0.5" value="5">
+                <div class="range-labels" aria-hidden="true"><span>1 m</span><span>50 m</span></div>
+                <p class="control-help">거리는 실제 촬영 범위를 바꾸지만 화각 자체는 바꾸지 않습니다.</p>
+              </div>
+            </div>
+
+            <section class="tip" aria-roledescription="carousel" aria-labelledby="tip-heading">
+              <div class="tip-header">
+                <p class="tip-title" id="tip-heading">살펴보기 <span class="tip-counter" id="tip-counter" aria-live="polite"></span></p>
+                <div class="tip-nav" role="group" aria-label="살펴보기 넘기기">
+                  <button class="tip-button" type="button" id="tip-prev" aria-label="이전 내용">&#8249;</button>
+                  <button class="tip-button" type="button" id="tip-next" aria-label="다음 내용">&#8250;</button>
+                </div>
+              </div>
+              <div aria-live="polite">
+                <div class="tip-slide" data-tip><p class="tip-subtitle">화각이란</p><p class="tip-body">사진에 담기는 시야의 각도입니다. 같은 센서라면 초점거리가 짧을수록 넓고, 길수록 좁아집니다.</p></div>
+                <div class="tip-slide" data-tip hidden><p class="tip-subtitle">센서와 크롭</p><p class="tip-body">같은 렌즈와 위치에서 작은 센서는 이미지의 중앙을 더 좁게 기록합니다. 렌즈의 실제 초점거리가 바뀌는 것은 아닙니다.</p></div>
+                <div class="tip-slide" data-tip hidden><p class="tip-subtitle">35 mm 환산</p><p class="tip-body">선택한 센서와 같은 대각선 화각을 얻는 풀프레임 초점거리입니다. 센서의 대각선 비율인 크롭 팩터를 실제 초점거리에 곱합니다.</p></div>
+                <div class="tip-slide" data-tip hidden><p class="tip-subtitle">화각과 원근</p><p class="tip-body">화각이 달라도 카메라 위치가 같으면 피사체 사이의 원근 관계는 같습니다. 같은 구도를 위해 위치를 옮기면 원근이 달라집니다.</p></div>
+              </div>
+            </section>
+          </form>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>왜곡 없는 직선 투영을 가정한 근사치입니다. 근거리 초점 및 실제 렌즈의 왜곡에 따라 결과가 달라질 수 있습니다.</p>
+      <p class="footer-mark">FOCUS NOTES &nbsp; / &nbsp; 03</p>
+    </footer>
+  </div>
+
+  <script src="geometry.js"></script>
+  <script>
+    "use strict";
+
+    const sensors = {
+      full: { name: "풀프레임", width: 36, height: 24 },
+      aps: { name: "APS-C", width: 23.6, height: 15.7 },
+      mft: { name: "마이크로 포서드", width: 17.3, height: 13 }
+    };
+    const form = document.getElementById("controls-form");
+    const focalInput = document.getElementById("focal-length");
+    const sensorInput = document.getElementById("sensor");
+    const distanceInput = document.getElementById("distance");
+    const element = id => document.getElementById(id);
+
+    function sectorPath(angle) {
+      const halfAngle = angle * Math.PI / 360;
+      const x = 220 * Math.sin(halfAngle);
+      const y = 280 - 220 * Math.cos(halfAngle);
+      return `M270 280 L${(270 - x).toFixed(2)} ${y.toFixed(2)}`
+        + ` A220 220 0 0 1 ${(270 + x).toFixed(2)} ${y.toFixed(2)} Z`;
+    }
+
+    function render() {
+      const focalLength = Number(focalInput.value);
+      const distance = Number(distanceInput.value);
+      const sensor = sensors[sensorInput.value];
+      const result = Optics.fieldOfView(focalLength, sensor, distance);
+      const referenceAngle = Optics.angleOfView(Optics.fullFrame.width, focalLength);
+      const sensorWidth = 324 * sensor.width / Optics.fullFrame.width;
+      const sensorHeight = 216 * sensor.height / Optics.fullFrame.height;
+      const x = 180 - sensorWidth / 2;
+      const y = 124 - sensorHeight / 2;
+
+      element("focal-output").textContent = `${focalLength} mm`;
+      element("distance-output").textContent = `${formatNumber(distance, 1)} m`;
+      focalInput.setAttribute("aria-valuetext", `${focalLength} mm`);
+      distanceInput.setAttribute("aria-valuetext", `${formatNumber(distance, 1)} m`);
+      [focalInput, distanceInput].forEach(setRangeProgress);
+
+      element("horizontal-value").textContent = `${formatNumber(result.horizontal, 1)}°`;
+      element("vertical-value").textContent = `${formatNumber(result.vertical, 1)}°`;
+      element("diagonal-value").textContent = `${formatNumber(result.diagonal, 1)}°`;
+      element("equivalent-value").textContent = `${formatNumber(result.equivalent, 1)} mm`;
+      element("coverage-label").textContent = `${formatNumber(distance, 1)} m 거리의 촬영 범위`;
+      element("coverage-value").textContent = `${formatNumber(result.width, 2)} m × ${formatNumber(result.height, 2)} m`;
+      element("sensor-caption").textContent = `${sensor.name} ${sensor.width} × ${sensor.height} mm · 크롭 팩터 ${formatNumber(result.cropFactor, 2)}×`;
+
+      element("angle-selected").setAttribute("d", sectorPath(result.horizontal));
+      element("angle-reference").setAttribute("d", sectorPath(referenceAngle));
+      element("angle-description").textContent = `${focalLength} mm 렌즈의 가로 화각은 ${sensor.name}에서 ${formatNumber(result.horizontal, 1)}도, 풀프레임에서 ${formatNumber(referenceAngle, 1)}도입니다.`;
+      element("sensor-selected").setAttribute("x", x);
+      element("sensor-selected").setAttribute("y", y);
+      element("sensor-selected").setAttribute("width", sensorWidth);
+      element("sensor-selected").setAttribute("height", sensorHeight);
+      element("sensor-projection").setAttribute("transform",
+        `translate(180 124) scale(${focalLength / 50}) translate(-180 -124)`);
+      element("sensor-outside").setAttribute("d",
+        `M18 16 H342 V232 H18 Z M${x} ${y} H${x + sensorWidth} V${y + sensorHeight} H${x} Z`);
+      element("sensor-description").textContent = `같은 렌즈의 이미지에서 ${sensor.name} 센서가 기록하는 영역을 풀프레임과 비교합니다. 센서 크기는 ${sensor.width} × ${sensor.height} mm, 크롭 팩터는 ${formatNumber(result.cropFactor, 2)}배입니다.`;
+    }
+
+    setupTips();
+    form.addEventListener("input", render);
+    form.addEventListener("reset", () => requestAnimationFrame(render));
+    render();
+  </script>
+</body>
+</html>
