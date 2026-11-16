@@ -172,7 +172,7 @@
 
     .readouts {
       display: grid;
-      grid-template-columns: 1.3fr 1fr 1fr;
+      grid-template-columns: 1.3fr 1fr 1fr 1fr;
       gap: 12px;
       margin: 27px 0 21px;
       padding: 20px 0;
@@ -236,6 +236,8 @@
     }
 
     .chart-grid { stroke: #30403a; stroke-width: 1; }
+    .chart-grid-major { stroke: #3d5149; stroke-width: 1; }
+    .chart-grid-minor { stroke: #223230; stroke-width: 1; }
     .chart-zone { fill: #91c897; fill-opacity: .12; }
     .chart-boundary { stroke: #8dba91; stroke-opacity: .48; stroke-dasharray: 4 5; }
     .chart-threshold { stroke: var(--yellow); stroke-width: 1.4; stroke-dasharray: 5 5; }
@@ -399,8 +401,9 @@
       .intro-copy { font-size: 13px; }
       .graph-card, .control-card { padding: 22px 18px; }
       .live-badge { font-size: 9px; }
-      .readouts { gap: 8px; margin-top: 22px; }
+      .readouts { grid-template-columns: 1fr 1fr; gap: 14px 8px; margin-top: 22px; }
       .readout + .readout { padding-left: 10px; }
+      .readout:nth-child(odd) { padding-left: 0; border-left: 0; }
       .readout-label { font-size: 10px; }
       .readout-value { font-size: 14px; }
       .readout-primary .readout-value { font-size: 20px; }
@@ -458,6 +461,10 @@
             <div class="readout">
               <span class="readout-label">먼 경계</span>
               <span class="readout-value" id="far-value">—</span>
+            </div>
+            <div class="readout">
+              <span class="readout-label">과초점 거리</span>
+              <span class="readout-value" id="hyperfocal-value">—</span>
             </div>
           </div>
 
@@ -565,7 +572,16 @@
       const far = tolerance >= focalSquared
         ? Infinity
         : focalSquared * focusMm / (focalSquared - tolerance) / 1000;
-      return { near, far, depth: far - near };
+      const hyperfocal = (focalSquared / (aperture * circleOfConfusion) + focalLength) / 1000;
+      return { near, far, depth: far - near, hyperfocal };
+    }
+
+    function niceStep(roughStep) {
+      const exponent = Math.floor(Math.log10(roughStep));
+      const base = 10 ** exponent;
+      const fraction = roughStep / base;
+      const mantissa = fraction < 1.5 ? 1 : fraction < 3.5 ? 2 : fraction < 7.5 ? 5 : 10;
+      return { step: mantissa * base, mantissa: mantissa === 10 ? 1 : mantissa, exponent: mantissa === 10 ? exponent + 1 : exponent };
     }
 
     function blurDiameter(distance, settings) {
@@ -634,12 +650,11 @@
       const maxBlur = settings.circle * 3;
       const x = value => left + (value - minDistance) / (maxDistance - minDistance) * plotWidth;
       const y = value => bottom - value / maxBlur * plotHeight;
-      const tickCount = width < 440 ? 3 : 5;
-      const tickStep = (maxDistance - minDistance) / tickCount;
-      const tickDigits = Math.max(0, Math.min(5, Math.max(
-        Math.ceil(-Math.log10(tickStep)) + 1,
-        Math.ceil(-Math.log10(minDistance))
-      )));
+      const tickTarget = width < 440 ? 4 : 7;
+      const ticks = niceStep((maxDistance - minDistance) / tickTarget);
+      const tickStep = ticks.step;
+      const tickDigits = Math.max(0, -ticks.exponent);
+      const minorStep = tickStep / (ticks.mantissa === 2 ? 4 : 5);
       const nearX = Math.max(left, x(result.near));
       const farX = Number.isFinite(result.far) ? Math.min(right, x(result.far)) : right;
       const focusX = x(settings.focus);
@@ -663,11 +678,23 @@
         grid += `<line class="chart-grid" x1="${left}" y1="${position}" x2="${right}" y2="${position}"/>`;
         grid += `<text class="chart-tick" x="${left - 9}" y="${position + 4}" text-anchor="end">${formatCircle(value)}</text>`;
       }
-      for (let index = 0; index <= tickCount; index += 1) {
-        const distance = minDistance + tickStep * index;
+      const epsilon = 1e-9;
+      const firstMinor = Math.ceil(minDistance / minorStep - epsilon);
+      const lastMinor = Math.floor(maxDistance / minorStep + epsilon);
+      for (let index = firstMinor; index <= lastMinor; index += 1) {
+        const distance = index * minorStep;
+        const ratio = distance / tickStep;
+        if (Math.abs(ratio - Math.round(ratio)) < 1e-6) continue;
         const position = x(distance);
-        const anchor = index === 0 ? "start" : index === tickCount ? "end" : "middle";
-        grid += `<line class="chart-grid" x1="${position}" y1="${top}" x2="${position}" y2="${bottom}"/>`;
+        grid += `<line class="chart-grid-minor" x1="${position}" y1="${top}" x2="${position}" y2="${bottom}"/>`;
+      }
+      const firstTick = Math.ceil(minDistance / tickStep - epsilon);
+      const lastTick = Math.floor(maxDistance / tickStep + epsilon);
+      for (let index = firstTick; index <= lastTick; index += 1) {
+        const distance = index * tickStep;
+        const position = x(distance);
+        const anchor = position - left < 16 ? "start" : right - position < 16 ? "end" : "middle";
+        grid += `<line class="chart-grid-major" x1="${position}" y1="${top}" x2="${position}" y2="${bottom}"/>`;
         grid += `<text class="chart-tick chart-distance-tick" x="${position}" y="${bottom + 21}" text-anchor="${anchor}">${formatNumber(distance, tickDigits)}</text>`;
       }
 
@@ -698,7 +725,7 @@
         <text class="chart-focus-label" x="${labelX + labelWidth / 2}" y="${top + 23}" text-anchor="middle">초점 ${formatNumber(settings.focus, 1)} m</text>
       `;
 
-      let rangeMessage = "가로 범위는 설정에 맞춰 자동 조정되며, 허용 기준의 3배를 넘는 값은 상단에서 잘립니다.";
+      let rangeMessage = `세로선은 ${formatNumber(tickStep, tickDigits)} m 간격(보조선 ${formatNumber(minorStep, Math.max(0, tickDigits + 1))} m)의 고정 거리에 그려지므로, 간격이 넓어지거나 좁아지는 정도로 가로 범위의 변화를 볼 수 있습니다. 허용 기준의 3배를 넘는 값은 상단에서 잘립니다.`;
       if (!Number.isFinite(result.far)) {
         rangeMessage = `먼 경계는 무한대까지 이어집니다. ${rangeMessage}`;
       } else if (result.far > maxDistance) {
@@ -720,6 +747,7 @@
       document.getElementById("depth-unit").textContent = depth.unit;
       document.getElementById("near-value").textContent = formatBoundary(result.near, result.depth);
       document.getElementById("far-value").textContent = formatBoundary(result.far, result.depth);
+      document.getElementById("hyperfocal-value").textContent = `${formatNumber(result.hyperfocal, 2)} m`;
       document.getElementById("threshold-label").textContent = `허용 기준 (${settings.circle.toFixed(3)} mm)`;
       [focalInput, apertureInput, focusInput].forEach(setRangeProgress);
       drawChart(settings, result);
